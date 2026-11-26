@@ -16,6 +16,10 @@
  *   answer "1" — and later, the board's feedback on that side credits the
  *   passage, which commits anti-passback and journals entry / exit.
  *
+ * A READER-ONLY lane (SCRUM-68: a reader, no controller board) has no board
+ * to report a passage: the reader opens on our "1", and the passage is
+ * credited at the granted scan instead (`creditAtScan`).
+ *
  * Every refusal the box reaches about a band is journalled as a `denied`
  * band event; outcomes that name no band (a voucher at the reader, a beam
  * broken at rest, the gate held open) cannot be band events and are counted
@@ -475,6 +479,7 @@ export function createGateHost(deps: GateHostDeps): GateHost {
     const online = deps.isOnline();
     const decision = await decide(s.code, s.direction, online);
     if (!decision.open) {
+      if (lane.config.readerOnly) readerOnlyNote(lane, s.direction, 'refused', decision.reason);
       await journalDenied(lane, decision, s.direction, !online);
       return { code: '0', message: decision.message };
     }
@@ -489,7 +494,9 @@ export function createGateHost(deps: GateHostDeps): GateHost {
     // entry opened on a lane that cannot report one would expire as a timeout
     // and let the same band in again a window later, so an entry waits for a
     // lane that can credit it. Exits stay open whatever the board says (OD-A4).
-    if (s.direction === 'entry') {
+    // A reader-only lane (SCRUM-68) has no board to wait for: it credits at
+    // the scan instead (`creditAtScan`), so this check is for lanes with one.
+    if (s.direction === 'entry' && !lane.config.readerOnly) {
       const why = creditBlocker(lane);
       if (why) {
         count(`entry_uncreditable.${why}`);
@@ -504,9 +511,11 @@ export function createGateHost(deps: GateHostDeps): GateHost {
     // One band, one open in flight, box-wide: a second lane must not admit a
     // band whose first open has not yet been credited or expired.
     if (await pendingElsewhere(lane, decision.bandId)) {
+      if (lane.config.readerOnly) readerOnlyNote(lane, s.direction, 'refused', 'GATE_BUSY');
       await journalDenied(lane, denial('GATE_BUSY', decision.bandId), s.direction, !online);
       return { code: '0', message: GATE_MESSAGES.GATE_BUSY };
     }
+    if (lane.config.readerOnly) return creditAtScan(lane, decision, s.direction, online);
     const claim = lane.controller.claim({
       side,
       direction: s.direction,
@@ -533,6 +542,79 @@ export function createGateHost(deps: GateHostDeps): GateHost {
       await journalDenied(lane, denial('GATE_NOT_READY', decision.bandId), s.direction, !online);
       return { code: '0', message: GATE_MESSAGES.GATE_NOT_READY };
     }
+    return { code: '1', message: decision.message };
+  }
+
+  /** One box-log line per decision on a reader-only lane, so the log explains the count. */
+  function readerOnlyNote(
+    lane: Lane,
+    direction: GateDirection,
+    outcome: 'credited' | 'refused',
+    detail: GateDenyReason | { inside: number; exitWithoutEntry: boolean },
+  ): void {
+    note(
+      'info',
+      outcome === 'credited'
+        ? `reader-only gate ${lane.config.stationName}: ${direction} granted and credited at the scan (no controller board reports passages)`
+        : `reader-only gate ${lane.config.stationName}: ${direction} refused`,
+      {
+        station: lane.config.stationId,
+        direction,
+        ...(typeof detail === 'string' ? { reason: detail } : detail),
+      },
+    );
+  }
+
+  /**
+   * SCRUM-68 — the reader-only lane's grant. The reader opens the barrier on
+   * our "1" and no board will ever report the passage, so it is CREDITED AT
+   * THE SCAN: the box's inside-state moves now (anti-passback works from the
+   * scan) and the entry or exit is journalled now, in the same fact a board's
+   * report produces, marked `inferred` — the box inferred the passage, no
+   * board reported it. No open is claimed, so none can time out later.
+   *
+   * Anti-passback is checked again inside the one-at-a-time state write: two
+   * scans of one band in flight cannot both be credited as entries.
+   */
+  async function creditAtScan(
+    lane: Lane,
+    decision: Extract<GateDecision, { open: true }>,
+    direction: GateDirection,
+    online: boolean,
+  ): Promise<ReaderAnswer> {
+    const commit = await withPassages((state) => {
+      const key = decision.bandId.toLowerCase();
+      const wasInside = state.bands[key]?.inside === true;
+      if (direction === 'entry' && wasInside) return null;
+      const result = commitPassage(wasInside, direction, state.count);
+      state.bands[key] = { inside: result.inside, at: deps.now() };
+      state.count = result.count;
+      return result;
+    });
+    if (!commit) {
+      readerOnlyNote(lane, direction, 'refused', 'ANTI_PASSBACK');
+      await journalDenied(lane, denial('ANTI_PASSBACK', decision.bandId), direction, !online);
+      return { code: '0', message: GATE_MESSAGES.ANTI_PASSBACK };
+    }
+    readerOnlyNote(lane, direction, 'credited', {
+      inside: commit.count,
+      exitWithoutEntry: commit.exitWithoutEntry,
+    });
+    await journal(
+      gateEventFact({
+        eventId: deps.mintId(),
+        bandId: decision.bandId,
+        kind: direction,
+        direction,
+        side: sideFor(direction, lane.config.entrySide),
+        stationId: lane.config.stationId,
+        occurredAt: stamp(),
+        exitWithoutEntry: commit.exitWithoutEntry,
+        revoked: decision.revoked,
+        inferred: true,
+        offline: !online,
+      }),
+    );
     return { code: '1', message: decision.message };
   }
 
@@ -755,7 +837,22 @@ export function createGateHost(deps: GateHostDeps): GateHost {
     tick,
 
     async start() {
-      for (const lane of lanes.values()) await openLink(lane);
+      for (const lane of lanes.values()) {
+        if (lane.config.readerOnly) {
+          note(
+            'info',
+            `gate ${lane.config.stationName}: reader-only lane (no controller board): the reader opens the barrier on the box's "1", and each entry and exit is credited at the scan`,
+            {
+              station: lane.config.stationId,
+              readers: lane.config.readers.map((r) => ({
+                serial: r.serial,
+                direction: r.direction ?? 'both',
+              })),
+            },
+          );
+        }
+        await openLink(lane);
+      }
       if (deps.listen) {
         try {
           server = await startReaderServer(reader, deps.listen);

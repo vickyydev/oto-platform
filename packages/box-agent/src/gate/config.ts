@@ -81,6 +81,13 @@ export interface GateStationConfig {
     label: string;
     direction: GateDirection | null;
   }>;
+  /**
+   * SCRUM-68 — a READER-ONLY lane: the station holds a gate reader and no
+   * controller board. The reader opens the barrier itself when the box
+   * answers code "1" (opener `reader_relay`), and since no board can report
+   * the passage, the host credits it at the granted scan.
+   */
+  readerOnly: boolean;
   /** What could not be read, in words for Health. Empty when all is well. */
   problems: string[];
 }
@@ -148,7 +155,10 @@ export function readGateStation(station: BoxConfigStation): GateStationConfig {
   const problems: string[] = [];
   const controllers = station.devices.filter((d) => d.kind === GATE_CONTROLLER_KIND);
   const controller: BoxConfigDevice | undefined = controllers[0];
-  if (!controller) problems.push('no gate controller device is assigned to this station');
+  // SCRUM-68: a reader with no controller is a lane of its own, not a gap.
+  const readerOnly = !controller && station.devices.some((d) => d.kind === GATE_READER_KIND);
+  if (!controller && !readerOnly)
+    problems.push('no gate controller device is assigned to this station');
   if (controllers.length > 1)
     problems.push('more than one gate controller is assigned; the first is used');
   const settings = readControllerSettings(controller?.settings, problems);
@@ -158,7 +168,9 @@ export function readGateStation(station: BoxConfigStation): GateStationConfig {
     problems.push(`baud ${baud} is not one HX-X1 L-31 offers; ${GE_X2_DEFAULT_BAUD} is used`);
     baud = GE_X2_DEFAULT_BAUD;
   }
-  const opener = settings.opener ?? 'box_relay';
+  // A reader-only lane has no controller row to hold settings: the reader's
+  // own relay is its opener, and nothing has to be saved for it.
+  const opener: GateOpenerMode = readerOnly ? 'reader_relay' : (settings.opener ?? 'box_relay');
   if (opener === 'box_relay' && !settings.relay) {
     problems.push('the opener is the box relay but no relay wiring is configured');
   }
@@ -168,10 +180,15 @@ export function readGateStation(station: BoxConfigStation): GateStationConfig {
   const readers: GateStationConfig['readers'] = [];
   for (const d of station.devices) {
     if (d.kind !== GATE_READER_KIND) continue;
-    const serial = d.serialNumber?.trim();
+    // The Console's device form has no serial-number field, only Address; a
+    // reader-only lane, set up there, takes the gate serial from Address when
+    // the row holds no serial number. A lane with a controller is unchanged.
+    const serial = d.serialNumber?.trim() || (readerOnly ? d.address?.trim() : undefined);
     if (!serial) {
       problems.push(
-        `reader "${d.label}" has no gate serial number, so its calls cannot be matched`,
+        readerOnly
+          ? `reader "${d.label}" has no gate serial number (nor one typed as its Address), so its calls cannot be matched`
+          : `reader "${d.label}" has no gate serial number, so its calls cannot be matched`,
       );
       continue;
     }
@@ -196,6 +213,7 @@ export function readGateStation(station: BoxConfigStation): GateStationConfig {
     relay: settings.relay ?? null,
     expected: settings.expected ?? {},
     readers,
+    readerOnly,
     problems,
   };
 }
