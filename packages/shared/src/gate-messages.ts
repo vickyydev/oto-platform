@@ -32,7 +32,10 @@
  *   - an approval starts with the brand line and the first text line in
  *     capitals; a refusal starts on a fresh line under the refusal heading
  *     and ends in blank lines, because the reader app prints its own
- *     technical line above it and a stack trace after it.
+ *     technical line above it and a stack trace after it;
+ *   - a band whose guest chose a language at the till is shown in that
+ *     language instead, with one English line under a refusal
+ *     (`composeGuestGateScreen`, SCRUM-1077).
  */
 
 import { z } from 'zod';
@@ -570,6 +573,60 @@ export function composeGateScreen(
     ['', '', icon('⚠️', gateMessageLabel(texts, 'attention')), GATE_READER_RULE, ...text, ...below].join('\n') +
     '\n'.repeat(GATE_READER_REFUSAL_PADDING_LINES)
   );
+}
+
+/**
+ * SCRUM-1077 — THE SCREEN FOR A BAND WHOSE GUEST CHOSE A LANGUAGE AT THE TILL
+ * (`guestLanguage` on its `bands` row, `guest-language.ts`):
+ *
+ *   - the case's text in that language only, and the small words around the
+ *     facts in it too (`gateMessageLabel` reads the first language shown);
+ *   - a refusal adds one line in English under that text, so staff at the
+ *     gate can read why; none when the guest chose English;
+ *   - no Thai line is added for a guest who chose another language;
+ *   - the park's wording for that language when it has some for this case,
+ *     else the built-in text for that language, and a label likewise (then the
+ *     English one). With no text for the case in that language at all (the
+ *     built-in Thai for OVER_TIME is empty) the answer is null: the caller
+ *     lays the screen out in the park's own list of languages, as for a band
+ *     with no language. The screen is never empty.
+ *
+ * `texts` is the park's wording, or null when the park changed nothing (the
+ * built-in wording is used then). Wording only: whether the gate opens is
+ * decided before this and nothing here is read by that decision.
+ */
+export function composeGuestGateScreen(
+  texts: GateMessageTexts | null,
+  key: GateMessageCase,
+  language: GateMessageLang,
+  facts?: GateScreenFacts,
+): string | null {
+  const wording = texts ?? defaultGateMessages();
+  const own = lines(wording.cases[key]?.[language]);
+  const text = own.length ? own : lines(GATE_MESSAGE_DEFAULT_CASES[key][language]);
+  if (text.length === 0) return null;
+  const english = GATE_MESSAGE_CASE_INFO[key].opens || language === 'en' ? null : gateStaffLine(wording, key);
+  const staffLine = english && english !== text.join(' ') ? english : null;
+  const label = (k: GateMessageLabel): ByLang => {
+    const row = wording.labels[k] ?? GATE_MESSAGE_DEFAULT_LABELS[k];
+    const mine = cleanGateText(row[language] ?? '', true);
+    return { ...row, [language]: mine || GATE_MESSAGE_DEFAULT_LABELS[k][language] };
+  };
+  const shown: GateMessageTexts = {
+    languages: [language],
+    cases: {
+      ...wording.cases,
+      [key]: { ...wording.cases[key], [language]: [...text, ...(staffLine ? [staffLine] : [])].join('\n') },
+    },
+    labels: Object.fromEntries(GATE_MESSAGE_LABELS.map((k) => [k, label(k)])) as Record<GateMessageLabel, ByLang>,
+  };
+  return composeGateScreen(shown, key, facts);
+}
+
+/** A case's English text as one line, for staff under a refusal: the park's, else the built-in. */
+function gateStaffLine(texts: GateMessageTexts, key: GateMessageCase): string {
+  const own = lines(texts.cases[key]?.en);
+  return (own.length ? own : lines(GATE_MESSAGE_DEFAULT_CASES[key].en)).join(' ');
 }
 
 /** How wide a line is on the reader, roughly: Thai marks take no room, an emoji two. */

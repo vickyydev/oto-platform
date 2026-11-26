@@ -23,6 +23,7 @@
  */
 
 import { z } from 'zod';
+import type { GuestLanguage } from './guest-language';
 
 export const GATE_EVENT_TYPE = 'band.gate_event';
 
@@ -103,4 +104,10 @@ export interface BandGateDetails {
    * stay hours.
    */
   validUntil?: string | null;
+  /**
+   * SCRUM-1077 — the language the guest chose at the till for the band's
+   * sale (`pos.sale.guest_language`); null when nobody chose. Wording only:
+   * the gate's decision never reads it.
+   */
+  guestLanguage?: GuestLanguage | null;
 }
