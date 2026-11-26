@@ -8435,6 +8435,17 @@
                     "maxLength": 120,
                     "nullable": true
                   },
+                  "guestLanguage": {
+                    "type": "string",
+                    "enum": [
+                      "en",
+                      "zh",
+                      "th",
+                      "ru",
+                      "fr"
+                    ],
+                    "nullable": true
+                  },
                   "expectedTotalSatang": {
                     "type": "integer",
                     "minimum": 0
@@ -9117,6 +9128,17 @@
                     "maxLength": 120,
                     "nullable": true
                   },
+                  "guestLanguage": {
+                    "type": "string",
+                    "enum": [
+                      "en",
+                      "zh",
+                      "th",
+                      "ru",
+                      "fr"
+                    ],
+                    "nullable": true
+                  },
                   "expectedTotalSatang": {
                     "type": "integer",
                     "minimum": 0
@@ -9786,6 +9808,17 @@
                       "customerNickname": {
                         "type": "string",
                         "maxLength": 120,
+                        "nullable": true
+                      },
+                      "guestLanguage": {
+                        "type": "string",
+                        "enum": [
+                          "en",
+                          "zh",
+                          "th",
+                          "ru",
+                          "fr"
+                        ],
                         "nullable": true
                       },
                       "expectedTotalSatang": {
@@ -11117,6 +11150,17 @@
                   "customerNickname": {
                     "type": "string",
                     "maxLength": 120,
+                    "nullable": true
+                  },
+                  "guestLanguage": {
+                    "type": "string",
+                    "enum": [
+                      "en",
+                      "zh",
+                      "th",
+                      "ru",
+                      "fr"
+                    ],
                     "nullable": true
                   },
                   "expectedTotalSatang": {

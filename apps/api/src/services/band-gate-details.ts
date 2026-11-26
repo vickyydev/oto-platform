@@ -1,6 +1,6 @@
 import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
 import { band, sale, saleExtensionBand, saleLine, ticketPackage } from '@oto/db';
-import { bandValidUntil, type BandGateDetails } from '@oto/shared';
+import { bandValidUntil, readGuestLanguage, type BandGateDetails } from '@oto/shared';
 import type { Exec } from './tx';
 
 type BandRow = typeof band.$inferSelect;
@@ -16,6 +16,10 @@ type BandRow = typeof band.$inferSelect;
  * Computed on every read, so an Add time on the till reaches the box on its
  * next pull of the scope. Fields are added beside the band row, never in
  * place of one: an older box ignores them.
+ *
+ * SCRUM-1077 — and the language the guest chose at the till for the band's
+ * sale (`pos.sale.guest_language`), null when nobody chose, so the gate shows
+ * that guest's messages in it. Wording only: the gate's decision never reads it.
  */
 export async function withBandGateDetails(
   db: Exec,
@@ -42,7 +46,12 @@ export async function withBandGateDetails(
     : [];
   const sales = saleIds.length
     ? await db
-        .select({ id: sale.id, finalisedAt: sale.finalisedAt, occurredAt: sale.occurredAt })
+        .select({
+          id: sale.id,
+          finalisedAt: sale.finalisedAt,
+          occurredAt: sale.occurredAt,
+          guestLanguage: sale.guestLanguage,
+        })
         .from(sale)
         .where(inArray(sale.id, saleIds))
     : [];
@@ -61,6 +70,7 @@ export async function withBandGateDetails(
     );
   const lineOf = new Map(lines.map((l) => [l.id, l]));
   const startOf = new Map(sales.map((s) => [s.id, s.finalisedAt ?? s.occurredAt]));
+  const languageOf = new Map(sales.map((s) => [s.id, readGuestLanguage(s.guestLanguage)]));
   const extraOf = new Map<string, number>();
   for (const e of extra) extraOf.set(e.bandId, (extraOf.get(e.bandId) ?? 0) + e.minutes);
 
@@ -76,6 +86,7 @@ export async function withBandGateDetails(
       ticketLabel: line ? (line.packageName ?? line.label) : null,
       stayLabel,
       validUntil: until ? until.toISOString() : null,
+      guestLanguage: r.saleId ? (languageOf.get(r.saleId) ?? null) : null,
     };
   });
 }

@@ -175,6 +175,8 @@ describe('the bands scope carries each band its ticket, stay and end (SCRUM-68)'
     const items = (held?.payload as { items: Array<{ id: string; validUntil?: string; ticketLabel?: string }> }).items;
     const mine = items.find((i) => i.id === adult.id)!;
     expect(mine.ticketLabel).toBe('2 Hours Play');
+    // SCRUM-1077 — the guest's language rides in the same copy; this sale chose none.
+    expect(mine).toHaveProperty('guestLanguage', null);
     expect(Number.isFinite(Date.parse(mine.validUntil!))).toBe(true);
 
     // An Add time, then the box's own pull of the scope (the gate's `?scopes=bands`).
