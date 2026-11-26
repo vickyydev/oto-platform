@@ -74,7 +74,13 @@ import {
   type ReaderServer,
 } from './reader-host';
 import type { BoxConfigStation } from '../protocol';
-import type { GateDenyReason } from '@oto/shared';
+import {
+  composeGateScreen,
+  readGateMessagesWire,
+  type GateDenyReason,
+  type GateMessageCase,
+  type GateMessageTexts,
+} from '@oto/shared';
 
 // --- The box's copy of the bands ------------------------------------------------
 
@@ -245,6 +251,13 @@ export interface GateHostDeps {
   readWallets?: () => Promise<unknown>;
   /** SCRUM-68 — how often the band copy is pulled while online. */
   bandsRefreshMs?: number;
+  /**
+   * SCRUM-1078 — the park's own wording for the reader, as its config bundle
+   * carries it (`gateMessages`), read at every answer so a config pull is
+   * used at the next scan. Absent or unreadable, the reader shows the
+   * built-in wording exactly as before.
+   */
+  messages?: () => unknown;
 }
 
 /**
@@ -528,16 +541,23 @@ export function createGateHost(deps: GateHostDeps): GateHost {
     }
   }
 
+  /** What the reader shows for one answer: the logged message, and the facts behind it. */
+  interface Presented {
+    message: string;
+    facts?: GateScreenFacts;
+  }
+
   /**
    * SCRUM-68 — what the reader shows for this answer: the plain message when
    * the box knows nothing more, otherwise the message with the band's ticket,
-   * its time and (on a grant) its credit (`screen.ts`).
+   * its time and (on a grant) its credit (`screen.ts`). The facts are kept
+   * beside it for the park's own wording (SCRUM-1078, `withScreen`).
    */
-  async function screenFor(code: string, decided: Decided, lead: string): Promise<string> {
+  async function present(code: string, decided: Decided, lead: string): Promise<Presented> {
     const d = decided.decision;
-    if (!d.bandId) return lead;
+    if (!d.bandId) return { message: lead };
     const known = decided.lookup(d.bandId);
-    if (known.state === 'unknown') return lead;
+    if (known.state === 'unknown') return { message: lead };
     const details = known.state === 'active' ? known.details : undefined;
     const facts: GateScreenFacts = {
       now: deps.now(),
@@ -548,15 +568,52 @@ export function createGateHost(deps: GateHostDeps): GateHost {
     };
     if (d.open) {
       const credit = await creditOf(code);
-      return gateScreenMessage(
-        lead,
-        { ...facts, ...(credit === undefined ? {} : { creditSatang: credit }) },
-        ['kind', 'ticket', 'time', 'credit'],
-      );
+      const full = { ...facts, ...(credit === undefined ? {} : { creditSatang: credit }) };
+      return { message: gateScreenMessage(lead, full, ['kind', 'ticket', 'time', 'credit']), facts: full };
     }
     if (d.reason === 'KID_BAND' || d.reason === 'OVER_TIME')
-      return gateScreenMessage(lead, facts, ['ticket', 'time']);
-    return lead;
+      return { message: gateScreenMessage(lead, facts, ['ticket', 'time']), facts };
+    return { message: lead, facts };
+  }
+
+  /** The wording last read, kept by the value it was read from. */
+  let wording: { from: unknown; texts: GateMessageTexts | null } = { from: undefined, texts: null };
+
+  function parkWording(): GateMessageTexts | null {
+    let raw: unknown;
+    try {
+      raw = deps.messages?.();
+    } catch {
+      return null;
+    }
+    if (raw !== wording.from) {
+      let texts: GateMessageTexts | null = null;
+      try {
+        texts = readGateMessagesWire(raw);
+      } catch {
+        texts = null;
+      }
+      wording = { from: raw, texts };
+    }
+    return wording.texts;
+  }
+
+  /**
+   * SCRUM-1078 — the answer with the park's own wording laid out for the
+   * reader (`composeGateScreen` in `@oto/shared`), when the box holds any.
+   * The code and the logged message are never changed: wording decides
+   * nothing. Without any, the answer is exactly as before and the wire lays
+   * the message out itself (`readerScreen`).
+   */
+  function withScreen(answer: ReaderAnswer, key: GateMessageCase, facts?: GateScreenFacts): ReaderAnswer {
+    const texts = parkWording();
+    if (!texts) return answer;
+    try {
+      return { ...answer, screen: composeGateScreen(texts, key, facts) };
+    } catch (err) {
+      note('warn', 'the park wording could not be laid out; the built-in wording was shown', { err: String(err) });
+      return answer;
+    }
   }
 
   function refusalNote(lane: Lane, direction: GateDirection, reason: GateRefusal): void {
@@ -602,7 +659,7 @@ export function createGateHost(deps: GateHostDeps): GateHost {
         serial: s.serial,
         direction: s.direction,
       });
-      return { code: '0', message: GATE_MESSAGES.GATE_NOT_READY };
+      return withScreen({ code: '0', message: GATE_MESSAGES.GATE_NOT_READY }, 'GATE_NOT_READY');
     }
     const online = deps.isOnline();
     const decided = await decide(s.code, s.direction, online);
@@ -611,15 +668,17 @@ export function createGateHost(deps: GateHostDeps): GateHost {
       if (lane.config.readerOnly) readerOnlyNote(lane, s.direction, 'refused', decision.reason);
       refusalNote(lane, s.direction, decision.reason);
       await journalDenied(lane, decision, s.direction, !online);
-      return { code: '0', message: await screenFor(s.code, decided, decision.message) };
+      const refused = await present(s.code, decided, decision.message);
+      return withScreen({ code: '0', message: refused.message }, decision.reason, refused.facts);
     }
-    const granted = await screenFor(s.code, decided, decision.message);
+    const granted = await present(s.code, decided, decision.message);
+    const greeting: GateMessageCase = s.direction === 'exit' ? 'goodbye' : 'welcome';
     const side = sideFor(s.direction, lane.config.entrySide);
     const ready = lane.opener.ready();
     if (!ready.ok) {
       lane.openerError = ready.reason;
       await journalDenied(lane, denial('GATE_NOT_READY', decision.bandId), s.direction, !online);
-      return { code: '0', message: GATE_MESSAGES.GATE_NOT_READY };
+      return withScreen({ code: '0', message: GATE_MESSAGES.GATE_NOT_READY }, 'GATE_NOT_READY');
     }
     // Anti-passback is committed ONLY from the board's §2 passage report. An
     // entry opened on a lane that cannot report one would expire as a timeout
@@ -636,7 +695,7 @@ export function createGateHost(deps: GateHostDeps): GateHost {
           why,
         });
         await journalDenied(lane, denial('GATE_NOT_READY', decision.bandId), s.direction, !online);
-        return { code: '0', message: GATE_MESSAGES.GATE_NOT_READY };
+        return withScreen({ code: '0', message: GATE_MESSAGES.GATE_NOT_READY }, 'GATE_NOT_READY');
       }
     }
     // One band, one open in flight, box-wide: a second lane must not admit a
@@ -644,9 +703,9 @@ export function createGateHost(deps: GateHostDeps): GateHost {
     if (await pendingElsewhere(lane, decision.bandId)) {
       if (lane.config.readerOnly) readerOnlyNote(lane, s.direction, 'refused', 'GATE_BUSY');
       await journalDenied(lane, denial('GATE_BUSY', decision.bandId), s.direction, !online);
-      return { code: '0', message: GATE_MESSAGES.GATE_BUSY };
+      return withScreen({ code: '0', message: GATE_MESSAGES.GATE_BUSY }, 'GATE_BUSY');
     }
-    if (lane.config.readerOnly) return creditAtScan(lane, decision, s.direction, online, granted);
+    if (lane.config.readerOnly) return creditAtScan(lane, decision, s.direction, online, granted, greeting);
     const claim = lane.controller.claim({
       side,
       direction: s.direction,
@@ -658,7 +717,7 @@ export function createGateHost(deps: GateHostDeps): GateHost {
     if (claim.expired.length) await settle(lane, claim.expired);
     if (!claim.ok) {
       await journalDenied(lane, denial(claim.reason, decision.bandId), s.direction, !online);
-      return { code: '0', message: GATE_MESSAGES[claim.reason] };
+      return withScreen({ code: '0', message: GATE_MESSAGES[claim.reason] }, claim.reason);
     }
     try {
       await lane.opener.open(side);
@@ -671,9 +730,9 @@ export function createGateHost(deps: GateHostDeps): GateHost {
         err: lane.openerError,
       });
       await journalDenied(lane, denial('GATE_NOT_READY', decision.bandId), s.direction, !online);
-      return { code: '0', message: GATE_MESSAGES.GATE_NOT_READY };
+      return withScreen({ code: '0', message: GATE_MESSAGES.GATE_NOT_READY }, 'GATE_NOT_READY');
     }
-    return { code: '1', message: granted };
+    return withScreen({ code: '1', message: granted.message }, greeting, granted.facts);
   }
 
   /** One box-log line per decision on a reader-only lane, so the log explains the count. */
@@ -712,7 +771,8 @@ export function createGateHost(deps: GateHostDeps): GateHost {
     decision: Extract<GateDecision, { open: true }>,
     direction: GateDirection,
     online: boolean,
-    message: string,
+    granted: Presented,
+    greeting: GateMessageCase,
   ): Promise<ReaderAnswer> {
     const commit = await withPassages((state) => {
       const key = decision.bandId.toLowerCase();
@@ -726,7 +786,7 @@ export function createGateHost(deps: GateHostDeps): GateHost {
     if (!commit) {
       readerOnlyNote(lane, direction, 'refused', 'ANTI_PASSBACK');
       await journalDenied(lane, denial('ANTI_PASSBACK', decision.bandId), direction, !online);
-      return { code: '0', message: GATE_MESSAGES.ANTI_PASSBACK };
+      return withScreen({ code: '0', message: GATE_MESSAGES.ANTI_PASSBACK }, 'ANTI_PASSBACK');
     }
     readerOnlyNote(lane, direction, 'credited', {
       inside: commit.count,
@@ -747,7 +807,7 @@ export function createGateHost(deps: GateHostDeps): GateHost {
         offline: !online,
       }),
     );
-    return { code: '1', message };
+    return withScreen({ code: '1', message: granted.message }, greeting, granted.facts);
   }
 
   async function settle(lane: Lane, outcomes: ControllerOutcome[]): Promise<void> {

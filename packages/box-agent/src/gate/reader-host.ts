@@ -31,6 +31,13 @@ export const READER_HEARTBEAT_PATH = '/interaction/Api/heartbeat';
 export interface ReaderAnswer {
   code: '0' | '1';
   message: string;
+  /**
+   * SCRUM-1078 — the reader's screen already laid out in the park's own
+   * wording (`composeGateScreen` in `@oto/shared`). When present the wire
+   * sends it in place of `message`; `message` stays the one-line text the box
+   * logs and tests. Never part of the reply body itself.
+   */
+  screen?: string;
 }
 
 export interface ReaderScan {
@@ -52,6 +59,8 @@ export interface ReaderRequest {
 export interface ReaderResponse {
   status: number;
   body: ReaderAnswer;
+  /** SCRUM-1078 — the scan's screen in the park's own wording, beside the body (`ReaderAnswer.screen`). */
+  screen?: string;
 }
 
 export interface ReaderState {
@@ -170,6 +179,7 @@ export function createReaderHost(options: ReaderHostOptions): ReaderHost {
         return {
           status: 200,
           body: { code: answer.code === '1' ? '1' : '0', message: answer.message },
+          ...(typeof answer.screen === 'string' ? { screen: answer.screen } : {}),
         };
       } catch {
         return refuse(failMessage);
@@ -260,9 +270,13 @@ export function startReaderServer(
         code: answer.code,
         message: readerScreen(answer.code, answer.message, direction),
       });
+      // SCRUM-1078: a scan the host already laid out in the park's own wording
+      // is sent as it was laid out.
+      const onScreen = (r: ReaderResponse): ReaderAnswer =>
+        r.screen !== undefined ? { code: r.body.code, message: r.screen } : shown(r.body);
       host
         .handle({ method: req.method ?? 'GET', path: req.url ?? '/', body })
-        .then((r) => reply(r.status, isScan && r.status === 200 ? shown(r.body) : r.body))
+        .then((r) => reply(r.status, isScan && r.status === 200 ? onScreen(r) : r.body))
         .catch(() => reply(200, shown({ code: '0', message: 'Please see reception' })));
     });
   });

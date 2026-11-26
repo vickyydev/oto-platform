@@ -3287,6 +3287,8 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       // SCRUM-68 — the screen's clock time and credit.
       timezone: bundle?.branch.timezone ?? null,
       readWallets: async () => (await heldStore.readBundle(boxId!, 'wallets').catch(() => null))?.payload ?? null,
+      // SCRUM-1078 — the park's own reader wording, from the config as last pulled.
+      messages: () => bundle?.gateMessages,
       journal: (fact) => heldOutbox.queue(fact),
       state: {
         read: (key) => heldStore.readRuntimeValue(boxId!, key),
