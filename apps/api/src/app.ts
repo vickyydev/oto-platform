@@ -75,6 +75,7 @@ import { stationSessionRoutes } from './routes/stations';
 import { stationBridgeRoutes } from './routes/station-bridge';
 import { kioskRoutes } from './routes/kiosk';
 import { printRoutes } from './routes/print';
+import { gateMessageRoutes } from './routes/gate-messages';
 import { scanningRoutes } from './routes/scanning';
 import { staffTokenRoutes } from './routes/staff-token';
 import { boothRoutes } from './routes/booth';
@@ -524,6 +525,9 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // hang off /branches/:branchId, /boxes/:id, /stations/:id and /devices/:id,
   // four prefixes already spoken for, so the paths are declared in full.
   await app.register(printRoutes);
+  // SCRUM-1078 — the gate readers' wording per park, beside printing: declared
+  // in full under /branches/:branchId for the same reason.
+  await app.register(gateMessageRoutes);
   // Scanning and the shift token (S2-06), declared in full for the same reason
   // the fleet's are: their paths hang off `/stations/:id`, `/me` and `/auth`,
   // three prefixes that are already spoken for.
