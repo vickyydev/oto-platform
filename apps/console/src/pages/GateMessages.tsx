@@ -11,6 +11,7 @@ import {
   GATE_MESSAGE_TEXT_MAX,
   GATE_READER_SCREEN,
   composeGateScreen,
+  composeGuestGateScreen,
   defaultGateMessages,
   previewGateScreen,
   type GateMessageCase,
@@ -38,8 +39,9 @@ import { cn } from '@/lib/utils';
  *
  * The preview is drawn by `composeGateScreen` in `@oto/shared`, the same
  * function the gate box lays a reply out with, so what is shown here is what
- * the reader is sent. Wording only: nothing on this page decides whether a
- * gate opens.
+ * the reader is sent; for a guest who chose a language at the till, by
+ * `composeGuestGateScreen`, as the box does (SCRUM-1077). Wording only:
+ * nothing on this page decides whether a gate opens.
  */
 
 type Texts = GateMessagesRead['texts'];
@@ -421,8 +423,10 @@ function LanguagesCard({
   return (
     <CardShell title="Languages shown on the gate" note="in this order">
       <p className="text-sm text-muted-foreground">
-        Every scan’s text is shown in these languages, in this order: the first line in each language, then the
+        A scan’s text is shown in these languages, in this order: the first line in each language, then the
         second line in each language. The small words under the text (Adult, until, Credit) use the first language.
+        A guest who chose a language at the till sees that language instead, with one line in English under a
+        refusal so staff at the gate can read why.
       </p>
       <ol className="flex flex-col gap-2">
         {draft.languages.map((lang, index) => (
@@ -519,10 +523,27 @@ function LabelsCard({
 
 function PreviewCard({ texts, caseKey }: { texts: GateMessageTexts; caseKey: GateMessageCase }) {
   const info = GATE_MESSAGE_CASE_INFO[caseKey];
-  const preview = previewGateScreen(composeGateScreen(texts, caseKey, sampleFacts(caseKey)), caseKey);
+  // SCRUM-1077 — the screen of a guest who chose a language at the till; none chosen: the list above.
+  const [guest, setGuest] = useState<GateMessageLang | null>(null);
+  const facts = sampleFacts(caseKey);
+  const guestScreen = guest ? composeGuestGateScreen(texts, caseKey, guest, facts) : null;
+  const preview = previewGateScreen(guestScreen ?? composeGateScreen(texts, caseKey, facts), caseKey);
   const refusal = !info.opens;
   return (
     <CardShell title="Preview" note={info.title} className="@4xl:w-[19rem]">
+      <SelectChip
+        label="Guest’s language at the till"
+        showLabel
+        value={guest ?? ''}
+        anyLabel="None chosen"
+        options={GATE_MESSAGE_LANGS.map((lang) => ({ value: lang, label: GATE_MESSAGE_LANG_NAMES[lang] }))}
+        onChange={(value) => setGuest(GATE_MESSAGE_LANGS.find((lang) => lang === value) ?? null)}
+      />
+      {guest && !guestScreen && (
+        <p className="text-xs text-muted-foreground">
+          No {GATE_MESSAGE_LANG_NAMES[guest]} text for this case: the gate shows the languages above.
+        </p>
+      )}
       <div className="inline-block self-start rounded-2xl bg-foreground p-3 text-background" aria-label="The reader’s screen">
         <div className="font-mono text-[13px] leading-snug" style={{ width: '15ch' }}>
           {preview.lines.map((line, index) => (
