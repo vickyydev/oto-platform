@@ -18,6 +18,32 @@ export interface FixHint {
   label?: string;
 }
 
+/**
+ * The reasons a person, or one of their single shifts, is left out of the month, as short sentences that
+ * say what to do. The server's reason is one long text: the same sentence once per single shift of a day.
+ * Repeats are dropped, and each known reason is said in plain words with its way forward.
+ */
+export function plainExclusion(reason: string): string[] {
+  const sentences = Array.from(new Set((reason ?? "").split(/(?<=\.)\s+(?=[A-Z])/).map((s) => s.trim()).filter(Boolean)));
+  return sentences.map((s) => {
+    const shift = /^Single shift on (\d{4}-\d{2}-\d{2}) \(([^)]*)\) is not paid by this run: (.*)\.$/.exec(s);
+    if (shift) {
+      const [, date, basis, why] = shift;
+      if (/taken off the schedule/.test(why)) return `Single shift on ${date}: it was removed from the schedule, but the person clocked in that day, so it is not paid. If they worked it, put the shift back in Scheduling.`;
+      if (/casual workers/.test(why)) return `Single shift on ${date} (${basis}): casual workers are not paid by company payroll. Pay it outside payroll.`;
+      if (/no payroll profile/.test(why)) return `Single shift on ${date}: the person has no payroll profile. Create one in Payroll Profiles.`;
+      if (/cannot be paid this month/.test(why)) return `Single shift on ${date}: not paid, because the person's payroll profile cannot be paid this month. Fix the profile first.`;
+      if (/contractor/.test(why)) return `Single shift on ${date}: not paid. The old contract is a contractor's fixed fee, and one shift of a fee has no pay rule yet.`;
+      if (/no allocation/.test(why)) return `Single shift on ${date}: not paid, because the profile has no branch split on that date. Add it on the payroll profile.`;
+      return `Single shift on ${date}: not paid, because ${why}.`;
+    }
+    if (/^No joining date/.test(s)) return "No joining date on the payroll profile. Enter it on the profile.";
+    if (/^No allocation is effective/.test(s)) return `${s.replace(/\.$/, "")}. Add the branch split on the payroll profile.`;
+    if (/has no payroll details or rules/.test(s)) return `${s.replace(/\.$/, "")}. Complete the branch in Payroll Setup, under Branch payroll details.`;
+    return s;
+  });
+}
+
 export function fixHint(message: string, staffId?: string): FixHint {
   const m = message ?? "";
   const profile = staffId ? { href: `/payroll/people/${staffId}`, label: "Open the profile" } : { href: "/payroll/people", label: "Open Payroll Profiles" };

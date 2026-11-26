@@ -26,7 +26,7 @@ import { ReasonDialog } from "@/components/payroll/reason-dialog";
 import {
   errorText, money, monthLabel, payrollCall, refreshPayroll, useFeeds, useMonthEnd, useMonthInputs, usePayrollSetup, usePreview, withBranchNames,
 } from "@/lib/payroll/api";
-import { fixHint, type MonthTab } from "@/lib/payroll/fix-hints";
+import { fixHint, plainExclusion, type MonthTab } from "@/lib/payroll/fix-hints";
 import { Field, NumberInput } from "@/pages/payroll-setup-page";
 
 const selectClass = "h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
@@ -122,8 +122,8 @@ function RunBanner({ view }: { view: MonthEndView }) {
         {view.canManage && <Button size="sm" onClick={() => setOpen(true)} data-testid="button-start-run">Start the {monthLabel(view.month)} run</Button>}
       </div>}
     {view.excluded.length > 0 && <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm">
-      <p className="flex items-center gap-2 font-semibold text-destructive"><AlertTriangle className="h-4 w-4" />{view.excluded.length} {view.excluded.length === 1 ? "person is" : "people are"} not in this month's payroll yet</p>
-      <ul className="mt-1 list-disc pl-6 text-xs">{view.excluded.map((x) => <li key={x.employeeId}><Link href={`/payroll/people/${x.employeeId}`} className="underline">{x.name}</Link>: {x.reason}</li>)}</ul>
+      <p className="flex items-center gap-2 font-semibold text-destructive"><AlertTriangle className="h-4 w-4" />{view.excluded.length} {view.excluded.length === 1 ? "person has" : "people have"} pay left out of this month</p>
+      <ul className="mt-1 list-disc pl-6 text-xs">{view.excluded.map((x) => <li key={x.employeeId}><Link href={`/payroll/people/${x.employeeId}`} className="underline">{x.name}</Link>: {plainExclusion(x.reason).join(" ")}</li>)}</ul>
     </div>}
     {view.run && !editable(view) && <p className="flex items-center gap-2 rounded-lg border border-sky-500/40 bg-sky-500/10 px-3 py-2 text-sm"><LockKeyhole className="h-4 w-4" />
       Version {view.run.version} is {view.run.status === "paid" ? "locked and paid" : "locked"}. These amounts will not change; the Owner reopens the month into a new version to correct anything.</p>}
@@ -140,6 +140,7 @@ type Day = MonthEndView["attendance"][number];
 function AttendanceTab({ view, noDeductionRules }: { view: MonthEndView; noDeductionRules: boolean }) {
   const [all, setAll] = useState(false);
   const [bulk, setBulk] = useState(false);
+  const [starting, setStarting] = useState(false);
   const [review, setReview] = useState<{ day: Day; action: "confirm" | "override" | "excuse"; clockIn: string; clockOut: string } | null>(null);
   const [ot, setOt] = useState<{ day: Day; outcome: "Pay" | "Bank" | "Reject"; choice: boolean } | null>(null);
   const [undo, setUndo] = useState<MonthEndView["overtime"][number] | null>(null);
@@ -153,7 +154,12 @@ function AttendanceTab({ view, noDeductionRules }: { view: MonthEndView; noDeduc
     <p className="flex items-center gap-2 text-sm">{waiting ? <CircleDashed className="h-4 w-4 text-amber-600" /> : <CheckCircle2 className="h-4 w-4 text-emerald-600" />}
       {waiting ? `${waiting} day${waiting === 1 ? "" : "s"} still to confirm` : "No unconfirmed attendance"}
       {canEdit && waiting > 0 && <Button size="sm" className="ml-2" onClick={() => setBulk(true)} data-testid="button-confirm-all">Confirm all {waiting} remaining</Button>}</p>
-    {waiting > 0 && !view.run && <p className="text-xs text-muted-foreground">Start the month's run (the button above) to decide these days.</p>}
+    {waiting > 0 && !view.run && <div className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm" data-testid="attendance-start-first">
+      <span className="flex-1">These days can be confirmed once the month's run is started. Start it, then press Confirm all remaining.</span>
+      {view.canManage && <Button size="sm" onClick={() => setStarting(true)} data-testid="button-start-run-attendance">Start the {monthLabel(view.month)} run</Button>}</div>}
+    {starting && <ReasonDialog open onOpenChange={setStarting} title={`Start the ${monthLabel(view.month)} run`} confirmLabel="Start run"
+      description={`Version 1, in draft, paid on day ${view.entity.defaultPayDay} (the company's default pay day). After this, the Confirm all remaining button appears here.`}
+      onConfirm={async (reason) => { await payrollCall("POST", `/api/payroll/month-end/${view.entity.id}/${view.month}/run`, { reason }); await refreshPayroll(); }} />}
     {waiting > 0 && view.run && <p className="text-xs text-muted-foreground">First decide, one by one, any day that needs its times corrected (Override) or forgiven (Excuse). Then confirm the rest in one step.</p>}
     {noDeductionRules && <p role="note" className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2 text-xs" data-testid="note-no-deduction-rules"><Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
       <span>No attendance deduction rule is saved, so late, early departure and no-show do not change anyone's pay yet. The rules are entered in <Link href="/payroll/setup" className="underline">Payroll Setup</Link>, under Deduction rules.</span></p>}
