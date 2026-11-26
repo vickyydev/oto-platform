@@ -90,6 +90,7 @@ const PayrollPersonPage = lazy(() => import("@/pages/payroll-person-page"));
 // The company payroll's month-end and rewards (SCRUM-568, R3).
 const PayrollMonthEndPage = lazy(() => import("@/pages/payroll-month-end-page"));
 const PayrollRewardsPage = lazy(() => import("@/pages/payroll-rewards-page"));
+const PayrollClauseReadingsPage = lazy(() => import("@/pages/payroll-clause-readings-page"));
 // The company payroll history and every employee's own payslips (SCRUM-569, R4).
 const PayrollHistoryPage = lazy(() => import("@/pages/payroll-history-page"));
 const PayrollMyPayslipsPage = lazy(() => import("@/pages/payroll-my-payslips-page"));
@@ -703,6 +704,7 @@ function Router() {
       <ProtectedRoute path="/payroll/setup" component={() => <PayrollProtectedLayout component={PayrollSetupPage} />} requiredRole={["staff", "manager", "operator_admin", "global_admin", "admin"]} />
       <ProtectedRoute path="/payroll/people" component={() => <PayrollProtectedLayout component={PayrollPeoplePage} />} requiredRole={["staff", "manager", "operator_admin", "global_admin", "admin"]} />
       <ProtectedRoute path="/payroll/people/:employeeId" component={() => <PayrollProtectedLayout component={PayrollPersonPage} />} requiredRole={["staff", "manager", "operator_admin", "global_admin", "admin"]} />
+      <ProtectedRoute path="/payroll/setup/rewards/clauses" component={() => <PayrollProtectedLayout component={PayrollClauseReadingsPage} />} requiredRole={["staff", "manager", "operator_admin", "global_admin", "admin"]} />
       <ProtectedRoute path="/payroll/setup/rewards" component={() => <PayrollProtectedLayout component={PayrollRewardsPage} />} requiredRole={["staff", "manager", "operator_admin", "global_admin", "admin"]} />
       <ProtectedRoute path="/payroll/month-end" component={() => <PayrollProtectedLayout component={PayrollMonthEndPage} />} requiredRole={["staff", "manager", "operator_admin", "global_admin", "admin"]} />
       <ProtectedRoute path="/payroll/history" component={() => <PayrollProtectedLayout component={PayrollHistoryPage} />} requiredRole={["staff", "manager", "operator_admin", "global_admin", "admin"]} />

@@ -24,10 +24,12 @@ import { canViewHrSalary, HR_PAY_HIDDEN_NOTE } from "@shared/hr-salary-permissio
 import { PAYROLL_DISCOUNTS, PAYROLL_DISCOUNT_LABELS, type CompanyMonthInputs, type CompanyPerson, type MonthEndView, type MonthInputsView, type FeedsView, type PreviewView } from "@shared/payroll-month";
 import { ReasonDialog } from "@/components/payroll/reason-dialog";
 import {
-  errorText, money, monthLabel, payrollCall, refreshPayroll, useFeeds, useMonthEnd, useMonthInputs, usePayrollSetup, usePreview, withBranchNames,
+  CLAUSES_PATH, errorText, money, monthLabel, payrollCall, refreshPayroll, useFeeds, useMonthEnd, useMonthInputs, usePayrollSetup, usePreview, withBranchNames,
 } from "@/lib/payroll/api";
 import { fixHint, plainExclusion, type MonthTab } from "@/lib/payroll/fix-hints";
 import { Field, NumberInput } from "@/pages/payroll-setup-page";
+import { ClauseMark } from "@/components/payroll/clause-mark";
+import { CLAUSE_STATE_LABEL, type ClauseMonthMark } from "@shared/payroll-clause-reading";
 
 const selectClass = "h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 const thisMonth = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok", year: "numeric", month: "2-digit" }).format(new Date()).slice(0, 7);
@@ -45,6 +47,24 @@ const STATUS_LABEL: Record<string, string> = { draft: "Draft", "gm-confirmed": "
 /** A run's inputs change while it is a draft or GM confirmed; a locked or paid version takes none until the Owner reopens it. */
 const editable = (view: MonthEndView) => !!view.run && (view.run.status === "draft" || view.run.status === "gm-confirmed");
 const when = (iso: string) => new Date(iso).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
+
+/**
+ * SCRUM-1075: who has a bonus from a contract clause, and how much the payroll engine calculated for it this
+ * month (the person's lines of the rules their approved reading pays from), for the orange mark.
+ */
+function clauseOf(preview: PreviewView | undefined) {
+  const marks = new Map((preview?.clauseMarks ?? []).map((m) => [m.employeeId, m]));
+  const components = (m: ClauseMonthMark | undefined) => new Set((m?.ruleIds ?? []).map((id) => `incentive:${id}`));
+  return {
+    mark: (id: string) => marks.get(id),
+    components: (id: string) => components(marks.get(id)),
+    amount: (person: CompanyPerson) => {
+      const own = components(marks.get(person.id));
+      return Math.round(person.lines.filter((l) => own.has(l.component)).reduce((n, l) => n + l.amount, 0) * 100) / 100;
+    },
+  };
+}
+const unpaidStates = new Set(["not-read", "waiting"]);
 
 export default function PayrollMonthEndPage() {
   const { user } = useAuth();
@@ -366,6 +386,7 @@ function AdjustmentsTab({ view }: { view: MonthEndView }) {
   const base = `/api/payroll/month-end/${view.entity.id}/${view.month}`;
   const can = view.canManage && editable(view);
   return <div className="space-y-4">
+    <ClauseIncentives view={view} />
     {!view.run && <Empty>Start the month's run to add one-off bonuses, deductions or overrides.</Empty>}
     <Section title="One-off bonuses and deductions" description="Only for things no system provides. The reason is shown on the payslip."
       action={can && <div className="flex gap-2"><Button size="sm" onClick={() => setAdd({ kind: "bonus", employeeId: view.people[0]?.id ?? "", amount: 0 })}><Plus className="mr-1 h-4 w-4" />Add bonus</Button>
@@ -403,6 +424,39 @@ function AdjustmentsTab({ view }: { view: MonthEndView }) {
     {remove && <ReasonDialog open onOpenChange={(o) => !o && setRemove(null)} title={`Remove the ${remove.label}?`} confirmLabel="Remove"
       onConfirm={async (reason) => { await payrollCall("POST", remove.path, { reason }); await refreshPayroll(); }} />}
   </div>;
+}
+
+/**
+ * SCRUM-1075 (the owner's approval message): every person with a bonus read from their contract clause, with
+ * the clause, the approved reading and what the payroll engine calculated for it this month, each with the
+ * orange mark; readings still waiting are listed as not paid, with the way to the review screen.
+ */
+function ClauseIncentives({ view }: { view: MonthEndView }) {
+  const preview = usePreview(view.entity.id, view.month, true);
+  const clause = clauseOf(preview.data);
+  const paid = new Map((preview.data?.result?.people ?? []).map((p) => [p.id, p]));
+  const onPayroll = new Set(view.people.map((p) => p.id));
+  const marks = (preview.data?.clauseMarks ?? []).filter((m) => m.state !== "not-incentive" && (paid.has(m.employeeId) || (onPayroll.has(m.employeeId) && unpaidStates.has(m.state))));
+  const name = (id: string) => paid.get(id)?.name ?? view.people.find((p) => p.id === id)?.name ?? id;
+  const total = Math.round(marks.reduce((n, m) => n + (paid.has(m.employeeId) ? clause.amount(paid.get(m.employeeId)!) : 0), 0) * 100) / 100;
+  return <Section title="Bonuses read from contract clauses" description="From the incentive clause on each person's HR profile: read by AI once, approved by a payroll manager or admin, then calculated by the payroll engine. A reading still waiting for approval is not paid."
+    action={<Link href={CLAUSES_PATH} className="inline-flex h-9 items-center rounded-md border px-3 text-xs font-semibold hover:bg-muted" data-testid="link-review-clauses">Review the readings</Link>}>
+    {preview.isLoading && <Skeleton className="h-16 w-full" />}
+    {preview.error != null && <p className="text-xs text-destructive">{errorText(preview.error)}</p>}
+    {preview.data && !marks.length && <Empty>No one paid this month has an incentive clause.</Empty>}
+    {marks.length > 0 && <ul className="divide-y rounded-lg border text-sm" data-testid="clause-incentives">{marks.map((m) => {
+      const person = paid.get(m.employeeId), amount = person ? clause.amount(person) : 0, pays = m.ruleIds.length > 0;
+      return <li key={m.employeeId} className="flex flex-wrap items-start gap-2 px-3 py-2" data-testid={`clause-incentive-${m.employeeId}`}>
+        <ClauseMark title={`Bonus read from the contract clause: ${CLAUSE_STATE_LABEL[m.state]}`} />
+        <span className="min-w-[14rem] flex-1"><strong>{name(m.employeeId)}</strong> <Badge variant="outline" className="ml-1 border-orange-500/50 text-orange-800 dark:text-orange-300">{CLAUSE_STATE_LABEL[m.state]}</Badge>
+          <span className="block text-xs italic text-muted-foreground">&ldquo;{m.clauseText}&rdquo;</span>
+          {m.summary && <span className="block text-xs">{pays ? "Approved reading" : "Reading"}: {m.summary}</span>}</span>
+        <span className="w-44 text-right" data-testid="clause-incentive-amount">{pays
+          ? <><span className="font-semibold tabular-nums text-orange-700 dark:text-orange-300">{person ? money(amount) : "—"}</span><span className="block text-[11px] text-muted-foreground">{person ? `calculated for ${monthLabel(view.month)}` : "not in this company's month"}</span></>
+          : <><span className="font-semibold text-orange-700 dark:text-orange-300">Not paid yet</span><span className="block text-[11px] text-muted-foreground">waiting for approval</span></>}</span>
+      </li>; })}
+      <li className="flex justify-between px-3 py-2 font-semibold"><span>Contract bonuses calculated for {monthLabel(view.month)}</span><span className="tabular-nums" data-testid="clause-incentives-total">{money(total)}</span></li></ul>}
+  </Section>;
 }
 
 // ─── Leave, OT bank and exits ────────────────────────────────────────────────
@@ -492,6 +546,7 @@ function PreviewTab({ view, entityId, month, active, onOpenTab }: { view: MonthE
   // Engine messages and formulas carry branch and person ids: both are shown as names.
   const names = useMemo(() => ({ ...Object.fromEntries(view.people.map((p) => [p.id, p.name])), ...(preview.data?.branchNames ?? {}) }), [view.people, preview.data]);
   const problems = useMemo(() => (result?.exceptions ?? []).filter((e) => e.severity !== "info"), [result]);
+  const clause = clauseOf(preview.data);
   if (preview.isLoading) return <Skeleton className="h-64 w-full" />;
   if (preview.error) return <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm"><p className="font-semibold">The month cannot be calculated yet</p><p>{errorText(preview.error)}</p>
     {fixHint(errorText(preview.error)).text && <p className="mt-1 text-xs">How to fix: {fixHint(errorText(preview.error)).text}</p>}</div>;
@@ -524,12 +579,16 @@ function PreviewTab({ view, entityId, month, active, onOpenTab }: { view: MonthE
           <tr>
             <td className="py-2 font-medium"><button type="button" className="inline-flex items-center gap-1 text-left hover:underline" aria-expanded={open === p.id}
               onClick={() => setOpen(open === p.id ? null : p.id)} data-testid={`person-${p.id}`}>
-              {open === p.id ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}{p.name}</button></td>
+              {open === p.id ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}{p.name}</button>
+              {(() => { const m = clause.mark(p.id); if (!m || m.state === "not-incentive") return null; const amount = clause.amount(p);
+                return <span className="ml-2 inline-flex items-center gap-1 align-middle text-xs font-semibold text-orange-700 dark:text-orange-300" data-testid={`clause-amount-${p.id}`}>
+                  <ClauseMark title={`Bonus read from the contract clause: ${CLAUSE_STATE_LABEL[m.state]}`} />
+                  {m.ruleIds.length ? `contract bonus ${money(amount)}` : "contract clause not paid yet"}</span>; })()}</td>
             <td className="text-muted-foreground">{p.jobTitle}</td><td className="text-xs">{withBranchNames(p.allocationBadge, names)}</td>
             <td className="text-right tabular-nums">{p.daysWorked}/{p.employedDays}</td><td className="text-right tabular-nums">{money(p.gross)}</td>
             <td className="text-right tabular-nums">{money(p.deductions)}</td><td className="text-right font-semibold tabular-nums">{money(p.net)}</td><td className="text-right tabular-nums">{money(p.employer)}</td>
           </tr>
-          {open === p.id && <tr><td colSpan={8} className="bg-muted/30 px-3 py-3"><PersonLines person={p} names={names} /></td></tr>}
+          {open === p.id && <tr><td colSpan={8} className="bg-muted/30 px-3 py-3"><PersonLines person={p} names={names} clauseComponents={clause.components(p.id)} /></td></tr>}
         </Fragment>)}</tbody>
       </table></div> :
         <ul className="divide-y rounded-lg border text-sm" data-testid="problems-list">{listed.map((e) => { const hint = fixHint(e.message, e.staffId); return <li key={e.id} className="flex flex-wrap items-start gap-2 px-3 py-2">
@@ -556,13 +615,13 @@ function PreviewTab({ view, entityId, month, active, onOpenTab }: { view: MonthE
 }
 
 /** One person's pay, line by line, as the payslip will show it. */
-function PersonLines({ person, names }: { person: CompanyPerson; names?: Record<string, string> }) {
+function PersonLines({ person, names, clauseComponents }: { person: CompanyPerson; names?: Record<string, string>; clauseComponents?: Set<string> }) {
   const group = (category: "earning" | "deduction" | "employer", title: string) => {
     const lines = person.lines.filter((l) => l.category === category && l.amount !== 0);
     if (!lines.length) return null;
     return <div><p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
       <ul className="divide-y rounded-md border bg-background">{lines.map((l) => <li key={l.id} className="flex flex-wrap items-start gap-2 px-2 py-1.5 text-xs">
-        <span className="min-w-[10rem] flex-1"><span className="font-medium">{withBranchNames(l.label, names)}</span>{l.overridden && <Badge variant="outline" className="ml-1">Overridden</Badge>}
+        <span className="min-w-[10rem] flex-1">{clauseComponents?.has(l.component) && <span className="mr-1 inline-flex align-middle"><ClauseMark title="From the contract clause, approved reading" /></span>}<span className="font-medium">{withBranchNames(l.label, names)}</span>{l.overridden && <Badge variant="outline" className="ml-1">Overridden</Badge>}
           <span className="block text-muted-foreground">{withBranchNames(l.formula, names)}</span></span>
         <span className="text-muted-foreground">{l.allocations.map((a) => `${names?.[a.costCentre] ?? (a.costCentre === "owner-non-operational" ? "Owner – non-operational" : a.costCentre)} ${money(a.amount)}`).join(" · ")}</span>
         <span className="w-28 text-right font-semibold tabular-nums">{category === "deduction" ? `−${money(l.amount)}` : money(l.amount)}</span></li>)}</ul></div>;

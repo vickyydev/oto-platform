@@ -23,6 +23,11 @@
  * module does not rely on the old `app.use('/api/payroll', …)` middleware in
  * server/routes.ts and is registered before it.
  *
+ * SCRUM-1075 adds the incentive clause readings: read with AI, corrected,
+ * calculated as a worked example, approved into dated rules, or marked not an
+ * incentive. Approving is a payroll write (`hr.manage_payroll`: admin,
+ * operator_admin, global_admin, the managers and admins who see pay).
+ *
  * Each registration names its permission key in the `payroll("…")` call on
  * the same line; the API census (apps/api/test/s217b-r7-payroll-cross-review
  * .test.ts) reads this file and pins the list, in order, with those keys.
@@ -53,6 +58,7 @@ import {
 import { draftProfiles, loadProfileView, loadRoster, saveProfile } from "./profiles";
 import { loadMonthInputsView, overrideMonthInput, saveBranchRevenue, saveStaffMonthInput } from "./inputs";
 import { loadRewardsView, saveIncentive, saveServicePolicy } from "./rewards";
+import { approveReading, clauseExample, correctReading, loadClauseReadings, markNotIncentive, readClause } from "./clause-readings";
 import { bookOtTimeOff, loadFeedsView, recordLeaveValuation, reverseLeaveValuation, saveOffboarding } from "./feeds";
 import { addManualLine, addOverride, confirmAllAttendance, loadMonthEnd, previewMonth, recordReview, removeManualLine, removeOverride, startRun } from "./month-end";
 import { approveThirdParty, confirmRun, lockRun, markPaid, recordOvertimeDecision, removeOvertimeDecision, reopenRun } from "./lifecycle";
@@ -216,6 +222,20 @@ export function registerPayrollRoutes(app: Express, { requireAuth, callerParkGro
     saveServicePolicy(parkGroupOf(res), actorOf(req), req.params.branchId, body(req))));
   app.post("/api/payroll/setup/rewards/incentives", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
     saveIncentive(parkGroupOf(res), actorOf(req), body(req))));
+
+  // ── Incentive clauses (SCRUM-1075): the AI proposes a reading, a payroll manager approves it, the engine pays it ──
+  app.get("/api/payroll/setup/rewards/clauses", requireAuth, payroll("hr.view_salary"), fence, answer(200, async (req, res) =>
+    ({ ...(await loadClauseReadings(parkGroupOf(res))), canManage: canManagePayroll(subject(req)) })));
+  app.post("/api/payroll/setup/rewards/clauses/:employeeId/read", requireAuth, payroll("hr.manage_payroll"), fence, answer(201, (req, res) =>
+    readClause(parkGroupOf(res), actorOf(req), req.params.employeeId, body(req))));
+  app.post("/api/payroll/setup/rewards/clauses/:employeeId/correct", requireAuth, payroll("hr.manage_payroll"), fence, answer(201, (req, res) =>
+    correctReading(parkGroupOf(res), actorOf(req), req.params.employeeId, body(req))));
+  app.get("/api/payroll/setup/rewards/clause-readings/:readingId/example", requireAuth, payroll("hr.view_salary"), fence, answer(200, (req, res) =>
+    clauseExample(parkGroupOf(res), req.params.readingId, req.query.month)));
+  app.post("/api/payroll/setup/rewards/clause-readings/:readingId/approve", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
+    approveReading(parkGroupOf(res), actorOf(req), req.params.readingId, body(req))));
+  app.post("/api/payroll/setup/rewards/clause-readings/:readingId/not-incentive", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
+    markNotIncentive(parkGroupOf(res), actorOf(req), req.params.readingId, body(req))));
 
   // ── Feeds: OT bank, leave valuations, offboarding (R3) ──
   app.get("/api/payroll/feeds/:month", requireAuth, payroll("hr.view_salary"), fence, answer(200, async (req, res) =>

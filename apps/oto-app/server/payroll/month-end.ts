@@ -43,6 +43,7 @@ import { recordRunAudit } from "./run-audit";
 import { frozenSnapshot, lifecycleView } from "./run-view";
 import { engineRefusal, payrollPeople, requireMonth } from "./inputs";
 import { loadPayrollWorld, PAY_READER, sourceSignature, type RunRef } from "./world";
+import { clauseMonthMarks } from "./clause-readings";
 import { calculateCompanyEngine } from "./engine/company-calculations";
 import { openCheckFixProblems, recordAttendanceReview } from "./engine/company-issue-review";
 import { newCompanyDraft } from "./engine/company-workflow";
@@ -288,6 +289,8 @@ export async function previewMonth(tenantId: string, entityId: string, monthValu
   const month = requireMonth(monthValue);
   const entity = await entityOf(db, tenantId, entityId);
   const started = performance.now();
+  // SCRUM-1075: whose pay has a line from a contract clause, and whose clause still waits for a person (outside the calculation and its signature).
+  const marks = clauseMonthMarks(tenantId).catch(() => undefined);
   const loaded = await loadPayrollWorld(tenantId, month, PAY_READER).catch(engineRefusal);
   const loadedAt = performance.now();
   const ref = loaded.runs.get(entity.id);
@@ -315,5 +318,6 @@ export async function previewMonth(tenantId: string, entityId: string, monthValu
     frozen: !!frozen,
     stale: ref?.status === "gm-confirmed" && ref.approvedSignature !== signature,
     openProblems: result ? openCheckFixProblems(result, loaded.doc.runs[`${entity.id}:${month}`]) : 0,
+    clauseMarks: await marks,
   };
 }

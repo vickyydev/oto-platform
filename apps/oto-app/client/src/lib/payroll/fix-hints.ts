@@ -50,6 +50,13 @@ export function fixHint(message: string, staffId?: string): FixHint {
   if (/How to fix:/i.test(m)) return { text: "" };
   if (/unconfirmed attendance|attendance days? (is|are) not confirmed/i.test(m))
     return { text: "Decide the days in tab 1, Attendance, or press Confirm all remaining there.", tab: "attendance", label: "Open Attendance" };
+  // SCRUM-1075: the counts and per-person items an incentive rule (a contract clause's, or any other) reads each month.
+  const count = /depends on count "([^"]+)"/i.exec(m);
+  if (count) return { text: `Type the month's count "${count[1]}" in tab 2, Inputs: Enter a number, Count (the team), input name ${count[1]}.`, tab: "inputs", label: "Open Inputs" };
+  const items = /: .* needs ([a-z][a-z0-9-]*)\.$/.exec(m);
+  if (items && staffId) return { text: `Type this person's ${items[1]} in tab 2, Inputs: Enter a number, Items (a person), input name ${items[1]}.`, tab: "inputs", label: "Open Inputs" };
+  if (/did not exceed/i.test(m))
+    return { text: "Nothing to fix: the sales did not pass the rule's threshold this month, so this bonus pays nothing." };
   if (/no .*sales are entered|depends on .* revenue/i.test(m))
     return { text: "If the branch sold anything that month, enter its sales in tab 2, Inputs. If it sold nothing, there is nothing to do.", tab: "inputs", label: "Open Inputs" };
   if (/discount add-back/i.test(m))
