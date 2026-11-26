@@ -36,7 +36,7 @@ let branchId: string;
 const path = () => `/branches/${branchId}/gate-messages`;
 
 const read = (cookie = admin) => ctx.app.inject({ method: 'GET', url: path(), headers: { cookie } });
-const put = (payload: unknown, cookie = admin, key = newId()) =>
+const put = (payload: object, cookie = admin, key = newId()) =>
   ctx.app.inject({ method: 'PUT', url: path(), headers: { cookie, 'idempotency-key': key }, payload });
 
 /** The whole effective wording as a PUT body, which is what the Console sends. */
