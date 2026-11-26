@@ -269,7 +269,9 @@ describe('both customer screens ask for it', () => {
     const till = source('pages/Till.tsx');
     expect(till).toContain("useLanguageChoice(customerStage === 'identify', `${saleEpochRef.current}`)");
     expect(till).toMatch(/const resetSale = \(\) => \{\s+saleEpochRef\.current \+= 1;/);
-    expect(till).toMatch(/<CustomerDisplay\s+stage=\{customerStage\}[\s\S]*?chooseLanguage=\{customerLanguage\.open\}\s+onLanguageChosen=\{customerLanguage\.choose\}/);
+    expect(till).toMatch(/<CustomerDisplay\s+stage=\{customerStage\}[\s\S]*?chooseLanguage=\{customerLanguage\.open\}\s+onLanguageChosen=\{chooseCustomerLanguage\}/);
+    // SCRUM-1077 — the press still settles the choice, and saves the language pressed with the sale.
+    expect(till).toMatch(/const chooseCustomerLanguage = \(lang: SupportedLang\) => \{\s+customerLanguage\.choose\(\);\s+setGuestLanguage\(guestLanguageChoice\(saleKeyRef\.current, lang\)\);/);
   });
 
   it('the paired display (and the counter box’s screen, which is the same page), once per sale the till names', () => {

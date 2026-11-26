@@ -1,7 +1,11 @@
+import type { SupportedLang as SharedSupportedLang } from '@oto/shared/i18n';
+
 // Supported customer-facing languages. Staff/admin surfaces are English-only
 // and never read this — this is scoped to customer-facing chrome + a few
 // translated catalog items (see resolveTranslation.ts).
-export type SupportedLang = 'en' | 'zh' | 'th' | 'ru' | 'fr';
+// SCRUM-1077 — the one list is `SUPPORTED_LANGS` in @oto/shared: the language
+// a guest chooses here is saved with the sale and read by the gate box.
+export type SupportedLang = SharedSupportedLang;
 
 export const DEFAULT_LANG: SupportedLang = 'en';
 
