@@ -41,7 +41,7 @@ test('Gate access on: a revoked adult is refused entry and still let out (OD-A4)
     direction: 'exit',
     exitWithoutEntry: false,
     revoked: true,
-    message: 'Goodbye / ขอบคุณที่มาเที่ยว',
+    message: 'Thank you / ขอบคุณ / See you again / แล้วพบกันใหม่',
   });
 });
 

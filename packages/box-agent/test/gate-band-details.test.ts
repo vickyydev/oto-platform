@@ -232,7 +232,8 @@ test('the cap: parts are cut kind, ticket, time — the credit goes last', () =>
   const facts = {
     now,
     kind: 'adult' as const,
-    ticketLabel: 'A very long ticket name that the park typed in full for its own reasons',
+    // Longer than the cap leaves room for, whatever the cap is.
+    ticketLabel: `A very long ticket name ${'that the park typed in full '.repeat(Math.ceil(GATE_SCREEN_MAX_CHARS / 28))}`,
     validUntil: now + 80 * MIN,
     creditSatang: 35_000,
     timezone: TZ,
@@ -244,7 +245,10 @@ test('the cap: parts are cut kind, ticket, time — the credit goes last', () =>
   assert.ok(message.includes('Credit ฿350'));
   assert.ok(message.includes('1 h 20 min left'));
   // A lead longer than the cap on its own is cut to the cap.
-  assert.equal(gateScreenMessage('x'.repeat(200), { now }, all).length, GATE_SCREEN_MAX_CHARS);
+  assert.equal(
+    gateScreenMessage('x'.repeat(GATE_SCREEN_MAX_CHARS + 80), { now }, all).length,
+    GATE_SCREEN_MAX_CHARS,
+  );
   // No zone: the time left without a clock.
   assert.equal(gateTimePart(now + 45 * MIN, now, undefined), '45 min left');
   assert.equal(gateTimePart(now - MIN, now, undefined), 'time ended');

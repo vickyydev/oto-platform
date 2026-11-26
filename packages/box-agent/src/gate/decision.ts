@@ -164,7 +164,8 @@ export type GateDecision =
  */
 export const GATE_MESSAGES = {
   welcome: 'Welcome / ยินดีต้อนรับ',
-  goodbye: 'Goodbye / ขอบคุณที่มาเที่ยว',
+  // The exit's own text, as the owner approved it on the gate's screen (26 November 2026).
+  goodbye: 'Thank you / ขอบคุณ / See you again / แล้วพบกันใหม่',
   NOT_A_BAND: 'Scan your wristband / สแกนสายรัดข้อมือ',
   BOX_NOT_READY: 'Please see reception / กรุณาติดต่อเคาน์เตอร์',
   BAND_INVALID: 'Band not valid / สายรัดข้อมือไม่ถูกต้อง',

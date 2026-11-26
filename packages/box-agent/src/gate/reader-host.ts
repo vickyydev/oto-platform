@@ -22,6 +22,7 @@
 import http from 'node:http';
 
 import type { GateDirection } from './config';
+import { readerScreen } from './reader-layout';
 
 export const READER_CHECK_CARD_PATH = '/interaction/Api/checkCard';
 export const READER_HEARTBEAT_PATH = '/interaction/Api/heartbeat';
@@ -246,10 +247,23 @@ export function startReaderServer(
       };
       if (tooBig) return reply(413, { code: '0', message: 'too large' });
       const body = parseBody(Buffer.concat(chunks).toString('utf8'), req.headers['content-type']);
+      // A scan's answer is laid out for the reader's narrow screen here, at
+      // the wire (`reader-layout.ts`); the heartbeat's is not shown and stays.
+      const isScan =
+        (req.url ?? '/').split('?')[0]!.replace(/\/+$/, '').toLowerCase() ===
+        READER_CHECK_CARD_PATH.toLowerCase();
+      const direction =
+        body && typeof body === 'object'
+          ? directionOf(str((body as Record<string, unknown>).reader))
+          : null;
+      const shown = (answer: ReaderAnswer): ReaderAnswer => ({
+        code: answer.code,
+        message: readerScreen(answer.code, answer.message, direction),
+      });
       host
         .handle({ method: req.method ?? 'GET', path: req.url ?? '/', body })
-        .then((r) => reply(r.status, r.body))
-        .catch(() => reply(200, { code: '0', message: 'Please see reception' }));
+        .then((r) => reply(r.status, isScan && r.status === 200 ? shown(r.body) : r.body))
+        .catch(() => reply(200, shown({ code: '0', message: 'Please see reception' })));
     });
   });
   return new Promise((resolve, reject) => {

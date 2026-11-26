@@ -21,8 +21,11 @@ import { formatTHB, wallClockMinutesInTz } from '@oto/shared';
 
 import type { BandKind } from './decision';
 
-/** The longest message the box sends the reader. */
-export const GATE_SCREEN_MAX_CHARS = 120;
+/**
+ * The longest message the box sends the reader. The reader's screen holds
+ * about 17 lines of about 15 characters (seen at the park, 26 November 2026).
+ */
+export const GATE_SCREEN_MAX_CHARS = 200;
 
 export type GateScreenPart = 'kind' | 'ticket' | 'time' | 'credit';
 
