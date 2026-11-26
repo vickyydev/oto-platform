@@ -48,10 +48,15 @@ import {
   commitPassage,
   decideGate,
   gateEventFact,
+  journalReason,
+  type BandDetails,
   type BandKind,
   type BandLookup,
   type GateDecision,
+  type GateRefusal,
 } from './decision';
+import { gateScreenMessage, type GateScreenFacts } from './screen';
+import { findSnapshotWallet, readWalletSnapshot } from '../wallet-lane';
 import {
   WATCHED_SETTINGS,
   WATCHED_SETTING_KEYS,
@@ -92,15 +97,20 @@ export function bandCopyFrom(
 ): BandCopy {
   const flag = (value: unknown): { gateAccess?: boolean } =>
     typeof value === 'boolean' ? { gateAccess: value } : {};
-  const active = new Map<string, { kind: BandKind; status: string; gateAccess?: boolean }>();
+  const active = new Map<
+    string,
+    { kind: BandKind; status: string; gateAccess?: boolean; details?: BandDetails }
+  >();
   for (const row of bandItems) {
     const r = row as { id?: unknown; kind?: unknown; status?: unknown; gateAccess?: unknown };
     if (typeof r.id !== 'string') continue;
     if (r.kind !== 'kid' && r.kind !== 'adult') continue;
+    const details = bandDetailsOf(row);
     active.set(r.id.toLowerCase(), {
       kind: r.kind,
       status: typeof r.status === 'string' ? r.status : 'active',
       ...flag(r.gateAccess),
+      ...(details ? { details } : {}),
     });
   }
   const revoked = new Map<string, { kind: BandKind | null; gateAccess?: boolean }>();
@@ -132,9 +142,35 @@ export function bandCopyFrom(
       if (!row) return { state: 'unknown' };
       const gate = row.gateAccess === undefined ? {} : { gateAccess: row.gateAccess };
       if (row.status !== 'active') return { state: 'revoked', kind: row.kind, ...gate };
-      return { state: 'active', kind: row.kind, ...gate };
+      return {
+        state: 'active',
+        kind: row.kind,
+        ...gate,
+        ...(row.details ? { details: row.details } : {}),
+      };
     },
   };
+}
+
+/**
+ * SCRUM-68 — the ticket, stay and end a `bands` row carries
+ * (`BandGateDetails` in `@oto/shared`), read defensively: a field that is not
+ * a usable value is left out. Undefined when the row carries none, as every
+ * row from an older platform does.
+ */
+function bandDetailsOf(row: unknown): BandDetails | undefined {
+  const r = row as { ticketLabel?: unknown; stayLabel?: unknown; validUntil?: unknown };
+  const text = (v: unknown): string | undefined =>
+    typeof v === 'string' && v.trim() ? v.trim() : undefined;
+  const ticketLabel = text(r.ticketLabel);
+  const stayLabel = text(r.stayLabel);
+  const at = typeof r.validUntil === 'string' ? Date.parse(r.validUntil) : Number.NaN;
+  const details: BandDetails = {
+    ...(ticketLabel ? { ticketLabel } : {}),
+    ...(stayLabel ? { stayLabel } : {}),
+    ...(Number.isFinite(at) ? { validUntil: at } : {}),
+  };
+  return Object.keys(details).length ? details : undefined;
 }
 
 // --- Passage state ------------------------------------------------------------------
@@ -203,7 +239,21 @@ export interface GateHostDeps {
   refreshBudgetMs?: number;
   readerOfflineAfterMs?: number;
   replyTimeoutMs?: number;
+  /** SCRUM-68 — the branch's zone, for the clock time on the screen. */
+  timezone?: string | null;
+  /** SCRUM-68 — the cached `wallets` scope's payload, for the credit on the screen. */
+  readWallets?: () => Promise<unknown>;
+  /** SCRUM-68 — how often the band copy is pulled while online. */
+  bandsRefreshMs?: number;
 }
+
+/**
+ * SCRUM-68 — how often a gate pulls its band copy while online, so a band's
+ * ticket and end time (an Add time on the till included) reach the screen
+ * without waiting for an unknown band. A band refused on time is asked about
+ * at once instead (`decide`).
+ */
+export const GATE_BANDS_REFRESH_MS = 120_000;
 
 export interface GateDeviceHealth {
   reachability: 'unknown' | 'reachable' | 'unreachable';
@@ -276,6 +326,12 @@ export function createGateHost(deps: GateHostDeps): GateHost {
   let server: ReaderServer | null = null;
   let polling = false;
   let stateChain: Promise<unknown> = Promise.resolve();
+  /**
+   * Real time this host last pulled the band copy. Starts at the host's
+   * creation: the agent has just written a copy with its config.
+   */
+  let bandsRefreshedAt = realNow();
+  let bandsRefreshing = false;
 
   function count(code: string): void {
     counters.set(code, (counters.get(code) ?? 0) + 1);
@@ -386,7 +442,7 @@ export function createGateHost(deps: GateHostDeps): GateHost {
         side: sideFor(direction, lane.config.entrySide),
         stationId: lane.config.stationId,
         occurredAt: stamp(),
-        reason: decision.reason,
+        reason: journalReason(decision.reason),
         offline,
       }),
     );
@@ -399,27 +455,15 @@ export function createGateHost(deps: GateHostDeps): GateHost {
     return { open: false, reason, bandId, message: GATE_MESSAGES[reason] };
   }
 
-  async function decide(
-    code: string,
-    direction: GateDirection,
-    online: boolean,
-  ): Promise<GateDecision> {
-    const held = await deps.readCopy().catch(() => ({ bands: [], deny: [] }));
-    const passages = await readPassages();
-    const inside = (id: string): boolean => passages.bands[id.toLowerCase()]?.inside === true;
-    const first = decideGate({
-      code,
-      direction,
-      key: deps.bandKey(),
-      lookup: bandCopyFrom(held.bands, held.deny).lookup,
-      inside,
-      unknownMeans: 'offline',
-    });
-    // OD-A5: online, an unknown band is asked of the platform before anyone
-    // is sent to reception — by pulling the band copy, bounded so the reader
-    // is answered in time.
-    if (first.open || first.reason !== 'BAND_UNKNOWN_OFFLINE' || !online || !deps.refreshBands)
-      return first;
+  /** A decision and the band copy it was taken on, for what the screen says. */
+  interface Decided {
+    decision: GateDecision;
+    lookup: (bandId: string) => BandLookup;
+  }
+
+  /** Pull the band copy, bounded so the reader is answered in time. True when it landed. */
+  async function refreshWithinBudget(): Promise<boolean> {
+    if (!deps.refreshBands) return false;
     let budget: ReturnType<typeof setTimeout> | undefined;
     const refreshed = await Promise.race([
       deps.refreshBands().catch(() => false),
@@ -428,15 +472,99 @@ export function createGateHost(deps: GateHostDeps): GateHost {
       }),
     ]);
     clearTimeout(budget);
-    if (!refreshed) return first;
-    const again = await deps.readCopy().catch(() => held);
-    return decideGate({
+    if (refreshed) bandsRefreshedAt = realNow();
+    return refreshed;
+  }
+
+  async function decide(code: string, direction: GateDirection, online: boolean): Promise<Decided> {
+    const held = await deps.readCopy().catch(() => ({ bands: [], deny: [] }));
+    const passages = await readPassages();
+    const inside = (id: string): boolean => passages.bands[id.toLowerCase()]?.inside === true;
+    const firstCopy = bandCopyFrom(held.bands, held.deny);
+    const first = decideGate({
       code,
       direction,
       key: deps.bandKey(),
-      lookup: bandCopyFrom(again.bands, again.deny).lookup,
+      lookup: firstCopy.lookup,
       inside,
-      unknownMeans: 'not_found',
+      unknownMeans: 'offline',
+      now: deps.now(),
+    });
+    // OD-A5: online, an unknown band is asked of the platform before anyone
+    // is sent to reception. SCRUM-68: so is a band refused on time — the till
+    // may have added time since the copy was pulled — before anyone is sent
+    // to the cashier.
+    const askAgain =
+      !first.open && (first.reason === 'BAND_UNKNOWN_OFFLINE' || first.reason === 'OVER_TIME');
+    if (!askAgain || !online || !deps.refreshBands) return { decision: first, lookup: firstCopy.lookup };
+    if (!(await refreshWithinBudget())) return { decision: first, lookup: firstCopy.lookup };
+    const again = await deps.readCopy().catch(() => held);
+    const copy = bandCopyFrom(again.bands, again.deny);
+    return {
+      decision: decideGate({
+        code,
+        direction,
+        key: deps.bandKey(),
+        lookup: copy.lookup,
+        inside,
+        unknownMeans: 'not_found',
+        now: deps.now(),
+      }),
+      lookup: copy.lookup,
+    };
+  }
+
+  /** The credit the cached `wallets` scope holds for this scanned code, or undefined. */
+  async function creditOf(code: string): Promise<number | undefined> {
+    if (!deps.readWallets) return undefined;
+    try {
+      const snapshot = readWalletSnapshot(await deps.readWallets());
+      if (!snapshot) return undefined;
+      const match = findSnapshotWallet(snapshot, code);
+      if (!match || !('found' in match) || match.found.status !== 'active') return undefined;
+      return match.found.balanceSatang;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * SCRUM-68 — what the reader shows for this answer: the plain message when
+   * the box knows nothing more, otherwise the message with the band's ticket,
+   * its time and (on a grant) its credit (`screen.ts`).
+   */
+  async function screenFor(code: string, decided: Decided, lead: string): Promise<string> {
+    const d = decided.decision;
+    if (!d.bandId) return lead;
+    const known = decided.lookup(d.bandId);
+    if (known.state === 'unknown') return lead;
+    const details = known.state === 'active' ? known.details : undefined;
+    const facts: GateScreenFacts = {
+      now: deps.now(),
+      ...(known.kind ? { kind: known.kind } : {}),
+      ...(details?.ticketLabel ? { ticketLabel: details.ticketLabel } : {}),
+      ...(details?.validUntil !== undefined ? { validUntil: details.validUntil } : {}),
+      ...(deps.timezone ? { timezone: deps.timezone } : {}),
+    };
+    if (d.open) {
+      const credit = await creditOf(code);
+      return gateScreenMessage(
+        lead,
+        { ...facts, ...(credit === undefined ? {} : { creditSatang: credit }) },
+        ['kind', 'ticket', 'time', 'credit'],
+      );
+    }
+    if (d.reason === 'KID_BAND' || d.reason === 'OVER_TIME')
+      return gateScreenMessage(lead, facts, ['ticket', 'time']);
+    return lead;
+  }
+
+  function refusalNote(lane: Lane, direction: GateDirection, reason: GateRefusal): void {
+    if (reason !== 'OVER_TIME') return;
+    note('info', `gate ${lane.config.stationName}: ${direction} refused, play time ended (sent to the cashier)`, {
+      station: lane.config.stationId,
+      direction,
+      journalledAs: journalReason(reason),
     });
   }
 
@@ -477,12 +605,15 @@ export function createGateHost(deps: GateHostDeps): GateHost {
       return { code: '0', message: GATE_MESSAGES.GATE_NOT_READY };
     }
     const online = deps.isOnline();
-    const decision = await decide(s.code, s.direction, online);
+    const decided = await decide(s.code, s.direction, online);
+    const decision = decided.decision;
     if (!decision.open) {
       if (lane.config.readerOnly) readerOnlyNote(lane, s.direction, 'refused', decision.reason);
+      refusalNote(lane, s.direction, decision.reason);
       await journalDenied(lane, decision, s.direction, !online);
-      return { code: '0', message: decision.message };
+      return { code: '0', message: await screenFor(s.code, decided, decision.message) };
     }
+    const granted = await screenFor(s.code, decided, decision.message);
     const side = sideFor(s.direction, lane.config.entrySide);
     const ready = lane.opener.ready();
     if (!ready.ok) {
@@ -515,7 +646,7 @@ export function createGateHost(deps: GateHostDeps): GateHost {
       await journalDenied(lane, denial('GATE_BUSY', decision.bandId), s.direction, !online);
       return { code: '0', message: GATE_MESSAGES.GATE_BUSY };
     }
-    if (lane.config.readerOnly) return creditAtScan(lane, decision, s.direction, online);
+    if (lane.config.readerOnly) return creditAtScan(lane, decision, s.direction, online, granted);
     const claim = lane.controller.claim({
       side,
       direction: s.direction,
@@ -542,7 +673,7 @@ export function createGateHost(deps: GateHostDeps): GateHost {
       await journalDenied(lane, denial('GATE_NOT_READY', decision.bandId), s.direction, !online);
       return { code: '0', message: GATE_MESSAGES.GATE_NOT_READY };
     }
-    return { code: '1', message: decision.message };
+    return { code: '1', message: granted };
   }
 
   /** One box-log line per decision on a reader-only lane, so the log explains the count. */
@@ -550,7 +681,7 @@ export function createGateHost(deps: GateHostDeps): GateHost {
     lane: Lane,
     direction: GateDirection,
     outcome: 'credited' | 'refused',
-    detail: GateDenyReason | { inside: number; exitWithoutEntry: boolean },
+    detail: GateRefusal | { inside: number; exitWithoutEntry: boolean },
   ): void {
     note(
       'info',
@@ -581,6 +712,7 @@ export function createGateHost(deps: GateHostDeps): GateHost {
     decision: Extract<GateDecision, { open: true }>,
     direction: GateDirection,
     online: boolean,
+    message: string,
   ): Promise<ReaderAnswer> {
     const commit = await withPassages((state) => {
       const key = decision.bandId.toLowerCase();
@@ -615,7 +747,7 @@ export function createGateHost(deps: GateHostDeps): GateHost {
         offline: !online,
       }),
     );
-    return { code: '1', message: decision.message };
+    return { code: '1', message };
   }
 
   async function settle(lane: Lane, outcomes: ControllerOutcome[]): Promise<void> {
@@ -793,9 +925,30 @@ export function createGateHost(deps: GateHostDeps): GateHost {
     return 'unread';
   }
 
+  /**
+   * SCRUM-68 — the band copy is pulled every `GATE_BANDS_REFRESH_MS` while
+   * online, in the background, so the screen's ticket and time (an Add time
+   * included) stay current. Never awaited by the tick: a slow platform must
+   * not hold the board's polling.
+   */
+  function refreshBandsWhenDue(): void {
+    if (!deps.refreshBands || bandsRefreshing || !deps.isOnline()) return;
+    if (realNow() - bandsRefreshedAt < (deps.bandsRefreshMs ?? GATE_BANDS_REFRESH_MS)) return;
+    bandsRefreshing = true;
+    // Stamped at the attempt, so a failing platform is asked once a period, not every tick.
+    bandsRefreshedAt = realNow();
+    void deps
+      .refreshBands()
+      .catch((err) => note('warn', 'the gate band copy could not be refreshed', { err: String(err) }))
+      .finally(() => {
+        bandsRefreshing = false;
+      });
+  }
+
   async function tick(): Promise<void> {
     if (polling) return;
     polling = true;
+    refreshBandsWhenDue();
     try {
       for (const lane of lanes.values()) {
         await settle(lane, lane.controller.expire());

@@ -3284,6 +3284,9 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       },
       isOnline: () => !state.offline && state.linkUp,
       refreshBands: () => pullBandsScope(boxId!),
+      // SCRUM-68 — the screen's clock time and credit.
+      timezone: bundle?.branch.timezone ?? null,
+      readWallets: async () => (await heldStore.readBundle(boxId!, 'wallets').catch(() => null))?.payload ?? null,
       journal: (fact) => heldOutbox.queue(fact),
       state: {
         read: (key) => heldStore.readRuntimeValue(boxId!, key),
