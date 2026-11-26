@@ -215,6 +215,8 @@ export function GateMessages() {
               label="Park"
               value={branchId}
               onChange={(value) => {
+                // The same park again changes nothing: the read in flight is kept.
+                if (value === branchId) return;
                 request.current++;
                 setBranchId(value);
               }}
