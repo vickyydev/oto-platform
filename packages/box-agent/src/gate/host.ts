@@ -76,10 +76,13 @@ import {
 import type { BoxConfigStation } from '../protocol';
 import {
   composeGateScreen,
+  composeGuestGateScreen,
   readGateMessagesWire,
+  readGuestLanguage,
   type GateDenyReason,
   type GateMessageCase,
   type GateMessageTexts,
+  type GuestLanguage,
 } from '@oto/shared';
 
 // --- The box's copy of the bands ------------------------------------------------
@@ -162,19 +165,22 @@ export function bandCopyFrom(
  * SCRUM-68 — the ticket, stay and end a `bands` row carries
  * (`BandGateDetails` in `@oto/shared`), read defensively: a field that is not
  * a usable value is left out. Undefined when the row carries none, as every
- * row from an older platform does.
+ * row from an older platform does. SCRUM-1077 — and the language its guest
+ * chose at the till, only when it is one of the five.
  */
 function bandDetailsOf(row: unknown): BandDetails | undefined {
-  const r = row as { ticketLabel?: unknown; stayLabel?: unknown; validUntil?: unknown };
+  const r = row as { ticketLabel?: unknown; stayLabel?: unknown; validUntil?: unknown; guestLanguage?: unknown };
   const text = (v: unknown): string | undefined =>
     typeof v === 'string' && v.trim() ? v.trim() : undefined;
   const ticketLabel = text(r.ticketLabel);
   const stayLabel = text(r.stayLabel);
   const at = typeof r.validUntil === 'string' ? Date.parse(r.validUntil) : Number.NaN;
+  const guestLanguage = readGuestLanguage(r.guestLanguage);
   const details: BandDetails = {
     ...(ticketLabel ? { ticketLabel } : {}),
     ...(stayLabel ? { stayLabel } : {}),
     ...(Number.isFinite(at) ? { validUntil: at } : {}),
+    ...(guestLanguage ? { guestLanguage } : {}),
   };
   return Object.keys(details).length ? details : undefined;
 }
@@ -545,6 +551,8 @@ export function createGateHost(deps: GateHostDeps): GateHost {
   interface Presented {
     message: string;
     facts?: GateScreenFacts;
+    /** SCRUM-1077 — the language the band's guest chose at the till, when the copy carries one. */
+    language?: GuestLanguage;
   }
 
   /**
@@ -559,6 +567,7 @@ export function createGateHost(deps: GateHostDeps): GateHost {
     const known = decided.lookup(d.bandId);
     if (known.state === 'unknown') return { message: lead };
     const details = known.state === 'active' ? known.details : undefined;
+    const language = details?.guestLanguage ? { language: details.guestLanguage } : {};
     const facts: GateScreenFacts = {
       now: deps.now(),
       ...(known.kind ? { kind: known.kind } : {}),
@@ -569,11 +578,11 @@ export function createGateHost(deps: GateHostDeps): GateHost {
     if (d.open) {
       const credit = await creditOf(code);
       const full = { ...facts, ...(credit === undefined ? {} : { creditSatang: credit }) };
-      return { message: gateScreenMessage(lead, full, ['kind', 'ticket', 'time', 'credit']), facts: full };
+      return { message: gateScreenMessage(lead, full, ['kind', 'ticket', 'time', 'credit']), facts: full, ...language };
     }
     if (d.reason === 'KID_BAND' || d.reason === 'OVER_TIME')
-      return { message: gateScreenMessage(lead, facts, ['ticket', 'time']), facts };
-    return { message: lead, facts };
+      return { message: gateScreenMessage(lead, facts, ['ticket', 'time']), facts, ...language };
+    return { message: lead, facts, ...language };
   }
 
   /** The wording last read, kept by the value it was read from. */
@@ -604,9 +613,28 @@ export function createGateHost(deps: GateHostDeps): GateHost {
    * The code and the logged message are never changed: wording decides
    * nothing. Without any, the answer is exactly as before and the wire lays
    * the message out itself (`readerScreen`).
+   *
+   * SCRUM-1077 — a band whose guest chose a language at the till is shown in
+   * that language, with one English line under a refusal
+   * (`composeGuestGateScreen`), from the park's wording or the built-in one.
+   * With no text in that language for this case, and for every answer that
+   * names no band of ours, the screen is the park's own list, as above.
    */
-  function withScreen(answer: ReaderAnswer, key: GateMessageCase, facts?: GateScreenFacts): ReaderAnswer {
+  function withScreen(
+    answer: ReaderAnswer,
+    key: GateMessageCase,
+    facts?: GateScreenFacts,
+    language?: GuestLanguage,
+  ): ReaderAnswer {
     const texts = parkWording();
+    if (language) {
+      try {
+        const screen = composeGuestGateScreen(texts, key, language, facts);
+        if (screen !== null) return { ...answer, screen };
+      } catch (err) {
+        note('warn', 'the guest language could not be laid out; the park languages were shown', { err: String(err) });
+      }
+    }
     if (!texts) return answer;
     try {
       return { ...answer, screen: composeGateScreen(texts, key, facts) };
@@ -669,7 +697,7 @@ export function createGateHost(deps: GateHostDeps): GateHost {
       refusalNote(lane, s.direction, decision.reason);
       await journalDenied(lane, decision, s.direction, !online);
       const refused = await present(s.code, decided, decision.message);
-      return withScreen({ code: '0', message: refused.message }, decision.reason, refused.facts);
+      return withScreen({ code: '0', message: refused.message }, decision.reason, refused.facts, refused.language);
     }
     const granted = await present(s.code, decided, decision.message);
     const greeting: GateMessageCase = s.direction === 'exit' ? 'goodbye' : 'welcome';
@@ -732,7 +760,7 @@ export function createGateHost(deps: GateHostDeps): GateHost {
       await journalDenied(lane, denial('GATE_NOT_READY', decision.bandId), s.direction, !online);
       return withScreen({ code: '0', message: GATE_MESSAGES.GATE_NOT_READY }, 'GATE_NOT_READY');
     }
-    return withScreen({ code: '1', message: granted.message }, greeting, granted.facts);
+    return withScreen({ code: '1', message: granted.message }, greeting, granted.facts, granted.language);
   }
 
   /** One box-log line per decision on a reader-only lane, so the log explains the count. */
@@ -786,7 +814,7 @@ export function createGateHost(deps: GateHostDeps): GateHost {
     if (!commit) {
       readerOnlyNote(lane, direction, 'refused', 'ANTI_PASSBACK');
       await journalDenied(lane, denial('ANTI_PASSBACK', decision.bandId), direction, !online);
-      return withScreen({ code: '0', message: GATE_MESSAGES.ANTI_PASSBACK }, 'ANTI_PASSBACK');
+      return withScreen({ code: '0', message: GATE_MESSAGES.ANTI_PASSBACK }, 'ANTI_PASSBACK', undefined, granted.language);
     }
     readerOnlyNote(lane, direction, 'credited', {
       inside: commit.count,
@@ -807,7 +835,7 @@ export function createGateHost(deps: GateHostDeps): GateHost {
         offline: !online,
       }),
     );
-    return withScreen({ code: '1', message: granted.message }, greeting, granted.facts);
+    return withScreen({ code: '1', message: granted.message }, greeting, granted.facts, granted.language);
   }
 
   async function settle(lane: Lane, outcomes: ControllerOutcome[]): Promise<void> {

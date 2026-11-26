@@ -43,6 +43,7 @@ import {
   type GateDenyReason,
   type GateEventKind,
   type GateEventPayload,
+  type GuestLanguage,
 } from '@oto/shared';
 
 import type { QueuedFact } from '../store';
@@ -61,6 +62,12 @@ export interface BandDetails {
   stayLabel?: string;
   /** When the band's play ends, epoch ms — the band print's "valid until". */
   validUntil?: number;
+  /**
+   * SCRUM-1077 — the language the guest chose at the till for the band's
+   * sale. Wording only: `decideGate` never reads it; the reader's screen does
+   * (`composeGuestGateScreen` in `@oto/shared`, through `host.ts`).
+   */
+  guestLanguage?: GuestLanguage;
 }
 
 /**
