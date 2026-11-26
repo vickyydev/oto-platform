@@ -153,29 +153,30 @@ export function readingJsonSchema(streamKeys: string[], poolKeys: string[]): Rec
 
 /**
  * Every number written in a clause, as a value: a decimal comma is a decimal
- * ("0,2%" is 0.2, "4,5 mln" is 4,500,000), a comma or space between groups of
- * three is a thousands separator ("4,500,000", "20 000"), and "mln",
- * "million" or "m" after a number multiplies it by a million, "k" by a
- * thousand.
+ * ("0,2%" is 0.2, "0,002%" is 0.002, "4,5 mln" is 4,500,000), a comma or
+ * space between groups of three is a thousands separator ("4,500,000",
+ * "20 000"), and "mln", "million" or "m" after a number multiplies it by a
+ * million, "k" by a thousand. A number that can be read both ways ("1,500")
+ * gives both values; one that starts with 0 is never a thousands number.
  */
 export function clauseNumbers(text: string): number[] {
   const out: number[] = [];
-  const re = /(\d{1,3}(?:[ ,]\d{3})+(?![\d,])|\d+(?:[.,]\d+)?)\s*(mln|million|m\b|k\b)?/gi;
+  const re = /(\d+(?:[ ,]\d{3})+(?![\d,])|\d+(?:[.,]\d+)?)\s*(mln|million|m\b|k\b)?/gi;
   for (const match of text.matchAll(re)) {
     const raw = match[1];
-    let value: number;
-    if (/^\d{1,3}(?:[ ,]\d{3})+$/.test(raw)) value = Number(raw.replace(/[ ,]/g, ""));
-    else value = Number(raw.replace(",", "."));
+    const values: number[] = [];
+    if (/^[1-9]\d{0,2}(?:[ ,]\d{3})+$/.test(raw)) values.push(Number(raw.replace(/[ ,]/g, "")));
+    if (/^\d+,\d+$/.test(raw)) values.push(Number(raw.replace(",", ".")));
+    if (/^\d+(?:\.\d+)?$/.test(raw)) values.push(Number(raw));
     const unit = match[2]?.toLowerCase();
-    if (unit === "mln" || unit === "million" || unit === "m") value *= 1_000_000;
-    else if (unit === "k") value *= 1_000;
-    if (Number.isFinite(value)) out.push(value);
+    const times = unit === "mln" || unit === "million" || unit === "m" ? 1_000_000 : unit === "k" ? 1_000 : 1;
+    for (const value of values) if (Number.isFinite(value)) out.push(value * times);
   }
   return out;
 }
 const SERVICE_CHARGE = /service\s*charge/i;
 const near = (a: number, b: number) => Math.abs(a - b) <= Math.max(1e-9, Math.abs(b) * 1e-9);
-const baht = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 2 });
+const baht = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 6 });
 
 /**
  * The guards, applied to every reading before it is saved. Returns the
