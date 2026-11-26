@@ -77,25 +77,17 @@ export async function runPresenceReconciliation(opts: NightJobOptions = {}): Pro
 
   try {
     const stuckHoursThreshold = 18;
+    // SCRUM-1074: a clock-out that is on record switches the marker off before anybody is called stuck,
+    // and each person still stuck has ONE open alert, updated here rather than added again at every check.
+    const markersClosed = await storage.closeStalePresenceMarkers(opts.tenantId);
     const stuckPresences = await storage.getStuckClockIns(stuckHoursThreshold, opts.tenantId);
     summary.stuckClockIns = stuckPresences.length;
-
-    for (const presence of stuckPresences) {
-      if (ATTENTION_WRITES_READY) await storage.createAttentionItem({
-        tenantId: presence.tenantId,
-        type: 'TIMEKEEPING_STUCK_CLOCK_IN',
-        severity: 'high',
-        employeeId: presence.employeeId,
-        branchId: presence.currentWorkBranchId || undefined,
-        title: `Stuck clock-in: over ${stuckHoursThreshold} hours`,
-        description: `Employee has been clocked in for over ${stuckHoursThreshold} hours without clocking out. Last clock-in: ${presence.lastInAt?.toISOString() || 'unknown'}`,
-      });
-      summary.anomalies++;
-    }
+    if (ATTENTION_WRITES_READY) await storage.syncStuckClockInAlerts(stuckPresences, stuckHoursThreshold, opts.tenantId);
+    summary.anomalies += stuckPresences.length;
 
     const repairResult = await storage.repairPresenceMismatches(opts.tenantId);
     summary.presenceMismatches = repairResult.mismatches;
-    summary.repairs = repairResult.repairs;
+    summary.repairs = repairResult.repairs + markersClosed;
     summary.anomalies += repairResult.anomalies;
 
     console.log(`[RECONCILIATION] Complete - Stuck: ${summary.stuckClockIns}, Mismatches: ${summary.presenceMismatches}, Repairs: ${summary.repairs}, Anomalies: ${summary.anomalies}`);
