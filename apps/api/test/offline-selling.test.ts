@@ -343,6 +343,24 @@ describe('a forced-offline virtual station sells, prints from the box queue, and
       expect(document.guardianPhone).toBe(b.kind === 'kid' ? '+66 81 234 5678' : undefined);
     }
   });
+
+  it('SCRUM-1077: the language the guest chose lands with a sale rung up offline; one not of the five is kept as none', async () => {
+    const total = await platformTotal(familyCart());
+    await goOffline();
+    const russian = await onBox('sale.finalise', saleBody({ ...familyCart(), guestLanguage: 'ru' }, total, cash(total)));
+    const unknown = await onBox('sale.finalise', saleBody({ ...familyCart(), guestLanguage: 'de' }, total, cash(total)));
+    const none = await onBox('sale.finalise', saleBody(familyCart(), total, cash(total)));
+    for (const sold of [russian, unknown, none]) expect(sold.finalised).toBe(true);
+    await goOnline();
+    const rows = await Promise.all([russian, unknown, none].map((sold) => saleRow(sold.sale.id)));
+    for (const row of rows) expect(row!.origin).toBe('box');
+    expect(rows.map((row) => row!.guestLanguage)).toEqual(['ru', null, null]);
+    // A replay of the batch keeps the one sale and its language.
+    await agent.outbox()!.replayLastBatch(50);
+    await goOnline();
+    expect(await ctx.db.select().from(sale).where(eq(sale.id, russian.sale.id))).toHaveLength(1);
+    expect((await saleRow(russian.sale.id))!.guestLanguage).toBe('ru');
+  });
 });
 
 it('syncs an offline Other payment as Other, without cash received or change', async () => {

@@ -4395,6 +4395,8 @@ export interface paths {
                         promoCodes?: string[];
                         customerPhone?: string | null;
                         customerNickname?: string | null;
+                        /** @enum {string|null} */
+                        guestLanguage?: "en" | "zh" | "th" | "ru" | "fr" | null;
                         expectedTotalSatang?: number;
                         bandHolder?: {
                             /** Format: uuid */
@@ -4619,6 +4621,8 @@ export interface paths {
                         promoCodes?: string[];
                         customerPhone?: string | null;
                         customerNickname?: string | null;
+                        /** @enum {string|null} */
+                        guestLanguage?: "en" | "zh" | "th" | "ru" | "fr" | null;
                         expectedTotalSatang?: number;
                         bandHolder?: {
                             /** Format: uuid */
@@ -4780,6 +4784,8 @@ export interface paths {
                             promoCodes?: string[];
                             customerPhone?: string | null;
                             customerNickname?: string | null;
+                            /** @enum {string|null} */
+                            guestLanguage?: "en" | "zh" | "th" | "ru" | "fr" | null;
                             expectedTotalSatang?: number;
                             bandHolder?: {
                                 /** Format: uuid */
@@ -5280,6 +5286,8 @@ export interface paths {
                         promoCodes?: string[];
                         customerPhone?: string | null;
                         customerNickname?: string | null;
+                        /** @enum {string|null} */
+                        guestLanguage?: "en" | "zh" | "th" | "ru" | "fr" | null;
                         expectedTotalSatang?: number;
                         bandHolder?: {
                             /** Format: uuid */

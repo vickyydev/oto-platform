@@ -139,7 +139,7 @@ import { assertCartStock, stockSharesForLines, takeStockForClose, type PrizeStoc
 import { printJobsOfSale, routeSalePrinting, type SalePrintingResult } from './sale-printing';
 import { debitForSale, grantSaleCredit, grantsOfSale } from './wallet';
 import type { CartBandHolderInput, CartPrepaidInput, ExtraCreditFor, WalletGrantView, WalletTenderInstruction } from '@oto/shared';
-import { BAND_FOOD_REFUSALS, normalizePhone } from '@oto/shared';
+import { BAND_FOOD_REFUSALS, normalizePhone, readGuestLanguage } from '@oto/shared';
 import {
   BENEFIT_CHECKOUT_REFUSALS,
   BENEFIT_CHECKOUT_WORDS,
@@ -583,6 +583,14 @@ export interface CommitSaleInput extends CartInput {
    * band when an adult stays; a value that is not a number is kept as none.
    */
   customerPhone?: string | null;
+  /**
+   * SCRUM-1077 — the language the guest chose at the till in this sale, one of
+   * the customer display's five. Kept on the sale (`pos.sale.guest_language`)
+   * and sent to the gate box with each of its bands, so the gate speaks to the
+   * guest in it. Absent, null or anything else is kept as none: a sale is
+   * never refused over it.
+   */
+  guestLanguage?: string | null;
   stationId: string;
   visitId?: string | null;
   note?: string;
@@ -4098,6 +4106,8 @@ export async function commitSale(
     memberId: input.memberId ?? null,
     // SCRUM-762 — the family's number, for the child's band when an adult stays.
     customerPhone: normalizePhone(input.customerPhone ?? '') ?? null,
+    // SCRUM-1077 — the language the guest chose, for the gate's messages; anything else is none.
+    guestLanguage: readGuestLanguage(input.guestLanguage),
     visitId: input.visitId ?? null,
     bookingId: input.bookingId ?? null,
     pricingMode: priced.scope.pricingMode,
