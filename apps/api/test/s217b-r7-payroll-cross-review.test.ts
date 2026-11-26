@@ -246,6 +246,7 @@ describe.skipIf(!HAS_APP)('round 7 independent payroll ownership review', () => 
       'put /api/payroll/feeds/offboarding/:employeeId hr.manage_payroll',
       'get /api/payroll/month-end/:entityId/:month hr.view_salary',
       'post /api/payroll/month-end/:entityId/:month/run hr.manage_payroll',
+      'post /api/payroll/month-end/:entityId/:month/attendance-confirm-all hr.manage_payroll',
       'put /api/payroll/month-end/:entityId/:month/attendance/:dayKey hr.manage_payroll',
       'post /api/payroll/month-end/:entityId/:month/manual hr.manage_payroll',
       'post /api/payroll/month-end/:entityId/:month/manual/:id/remove hr.manage_payroll',

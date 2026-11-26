@@ -54,7 +54,7 @@ import { draftProfiles, loadProfileView, loadRoster, saveProfile } from "./profi
 import { loadMonthInputsView, overrideMonthInput, saveBranchRevenue, saveStaffMonthInput } from "./inputs";
 import { loadRewardsView, saveIncentive, saveServicePolicy } from "./rewards";
 import { bookOtTimeOff, loadFeedsView, recordLeaveValuation, reverseLeaveValuation, saveOffboarding } from "./feeds";
-import { addManualLine, addOverride, loadMonthEnd, previewMonth, recordReview, removeManualLine, removeOverride, startRun } from "./month-end";
+import { addManualLine, addOverride, confirmAllAttendance, loadMonthEnd, previewMonth, recordReview, removeManualLine, removeOverride, startRun } from "./month-end";
 import { approveThirdParty, confirmRun, lockRun, markPaid, recordOvertimeDecision, removeOvertimeDecision, reopenRun } from "./lifecycle";
 import { listHistory, loadHistoryVersion, myPayslips, openHistoryFile, openMyPayslip, type ServedFile } from "./payslips";
 import { ewfSurcharge, loadStatutoryView, openDocumentFile, recordFiling, renderDocument } from "./statutory";
@@ -235,6 +235,8 @@ export function registerPayrollRoutes(app: Express, { requireAuth, callerParkGro
       canConfirm: canConfirmPayroll(subject(req)), canLock: canLockPayroll(subject(req)) })));
   app.post("/api/payroll/month-end/:entityId/:month/run", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
     startRun(parkGroupOf(res), actorOf(req), req.params.entityId, req.params.month, body(req))));
+  app.post("/api/payroll/month-end/:entityId/:month/attendance-confirm-all", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
+    confirmAllAttendance(parkGroupOf(res), actorOf(req), req.params.entityId, req.params.month, body(req))));
   app.put("/api/payroll/month-end/:entityId/:month/attendance/:dayKey", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
     recordReview(parkGroupOf(res), actorOf(req), req.params.entityId, req.params.month, req.params.dayKey, body(req))));
   app.post("/api/payroll/month-end/:entityId/:month/manual", requireAuth, payroll("hr.manage_payroll"), fence, answer(201, (req, res) =>

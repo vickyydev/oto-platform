@@ -26,6 +26,7 @@ import { ReasonDialog } from "@/components/payroll/reason-dialog";
 import {
   errorText, money, monthLabel, payrollCall, refreshPayroll, useFeeds, useMonthEnd, useMonthInputs, usePayrollSetup, usePreview, withBranchNames,
 } from "@/lib/payroll/api";
+import { fixHint, type MonthTab } from "@/lib/payroll/fix-hints";
 import { Field, NumberInput } from "@/pages/payroll-setup-page";
 
 const selectClass = "h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
@@ -81,6 +82,9 @@ const MONTH_TABS = ["attendance", "inputs", "adjustments", "feeds", "preview", "
 function MonthTabs({ entityId, month, initialTab }: { entityId: string; month: string; initialTab: string | null }) {
   const [tab, setTab] = useState<string>(() => MONTH_TABS.find((t) => t === initialTab) ?? "attendance");
   const view = useMonthEnd(entityId, month);
+  const setup = usePayrollSetup();
+  // SCRUM-1073: with no deduction rule saved, late, early and no-show change nothing; the attendance tab says so.
+  const noDeductionRules = !!setup.data && !setup.data.deductionLists.some((list) => list.rules.length > 0);
   return <Tabs value={tab} onValueChange={setTab} className="space-y-4">
     <TabsList className="flex h-auto flex-wrap justify-start">
       <TabsTrigger value="attendance">1. Attendance</TabsTrigger>
@@ -94,11 +98,11 @@ function MonthTabs({ entityId, month, initialTab }: { entityId: string; month: s
     {view.error && <Empty>{errorText(view.error)}</Empty>}
     {view.data && <>
       <RunBanner view={view.data} />
-      <TabsContent value="attendance"><AttendanceTab view={view.data} /></TabsContent>
+      <TabsContent value="attendance"><AttendanceTab view={view.data} noDeductionRules={noDeductionRules} /></TabsContent>
       <TabsContent value="inputs"><InputsTab month={month} /></TabsContent>
       <TabsContent value="adjustments"><AdjustmentsTab view={view.data} /></TabsContent>
       <TabsContent value="feeds"><FeedsTab month={month} /></TabsContent>
-      <TabsContent value="preview"><PreviewTab view={view.data} entityId={entityId} month={month} active={tab === "preview"} /></TabsContent>
+      <TabsContent value="preview"><PreviewTab view={view.data} entityId={entityId} month={month} active={tab === "preview"} onOpenTab={setTab} /></TabsContent>
       <TabsContent value="approvals"><ApprovalsTab view={view.data} active={tab === "approvals"} /></TabsContent>
     </>}
   </Tabs>;
@@ -133,8 +137,9 @@ function RunBanner({ view }: { view: MonthEndView }) {
 // ─── 1. Attendance ───────────────────────────────────────────────────────────
 
 type Day = MonthEndView["attendance"][number];
-function AttendanceTab({ view }: { view: MonthEndView }) {
+function AttendanceTab({ view, noDeductionRules }: { view: MonthEndView; noDeductionRules: boolean }) {
   const [all, setAll] = useState(false);
+  const [bulk, setBulk] = useState(false);
   const [review, setReview] = useState<{ day: Day; action: "confirm" | "override" | "excuse"; clockIn: string; clockOut: string } | null>(null);
   const [ot, setOt] = useState<{ day: Day; outcome: "Pay" | "Bank" | "Reject"; choice: boolean } | null>(null);
   const [undo, setUndo] = useState<MonthEndView["overtime"][number] | null>(null);
@@ -146,7 +151,15 @@ function AttendanceTab({ view }: { view: MonthEndView }) {
   return <Section title="Attendance review" description="From the punch clock, the rota and the timekeeping reviews managers already made. A decision here is saved against this run only — the attendance record itself never changes."
     action={<Button size="sm" variant="outline" onClick={() => setAll(!all)}>{all ? "Only days to review" : "Show every day"}</Button>}>
     <p className="flex items-center gap-2 text-sm">{waiting ? <CircleDashed className="h-4 w-4 text-amber-600" /> : <CheckCircle2 className="h-4 w-4 text-emerald-600" />}
-      {waiting ? `${waiting} day${waiting === 1 ? "" : "s"} still to confirm` : "No unconfirmed attendance"}</p>
+      {waiting ? `${waiting} day${waiting === 1 ? "" : "s"} still to confirm` : "No unconfirmed attendance"}
+      {canEdit && waiting > 0 && <Button size="sm" className="ml-2" onClick={() => setBulk(true)} data-testid="button-confirm-all">Confirm all {waiting} remaining</Button>}</p>
+    {waiting > 0 && !view.run && <p className="text-xs text-muted-foreground">Start the month's run (the button above) to decide these days.</p>}
+    {waiting > 0 && view.run && <p className="text-xs text-muted-foreground">First decide, one by one, any day that needs its times corrected (Override) or forgiven (Excuse). Then confirm the rest in one step.</p>}
+    {noDeductionRules && <p role="note" className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2 text-xs" data-testid="note-no-deduction-rules"><Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+      <span>No attendance deduction rule is saved, so late, early departure and no-show do not change anyone's pay yet. The rules are entered in <Link href="/payroll/setup" className="underline">Payroll Setup</Link>, under Deduction rules.</span></p>}
+    {bulk && <ReasonDialog open onOpenChange={setBulk} title={`Confirm all ${waiting} remaining days`} confirmLabel={`Confirm ${waiting} days`}
+      description="Saves Confirm on every day still waiting: the issues count as the clock recorded them, and overtime on those days is paid unless you reject it. Days you already decided stay as they are."
+      onConfirm={async (reason) => { await payrollCall("POST", `/api/payroll/month-end/${view.entity.id}/${view.month}/attendance-confirm-all`, { reason }); await refreshPayroll(); }} />}
     {!days.length ? <Empty>{all ? "No attendance recorded this month." : "Nothing to review."}</Empty> :
       <div className="overflow-x-auto"><table className="w-full min-w-[820px] text-sm">
         <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground"><tr><th className="py-1">Person</th><th>Date</th><th>Rota</th><th>Clocked</th><th>Approved</th><th>Issues</th><th>This run</th><th>Overtime</th><th /></tr></thead>
@@ -161,7 +174,7 @@ function AttendanceTab({ view }: { view: MonthEndView }) {
           <td>{d.overtimeHours > 0 ? (decisionOf(d) ? <span className="inline-flex items-center gap-1" title={decisionOf(d)!.reason}>
             <Badge variant={decisionOf(d)!.outcome === "Reject" ? "secondary" : "outline"}>{decisionOf(d)!.outcome} {d.overtimeHours}h</Badge>
             {canEdit && <Button size="sm" variant="ghost" aria-label="Remove the overtime decision" onClick={() => setUndo(decisionOf(d)!)}><Trash2 className="h-3.5 w-3.5" /></Button>}</span>
-            : canEdit ? <Button size="sm" variant="outline" onClick={() => setOt({ day: d, outcome: "Pay", choice: false })} data-testid={`button-overtime-${d.id}`}>{d.overtimeHours}h: decide</Button>
+            : canEdit ? <Button size="sm" variant="outline" onClick={() => setOt({ day: d, outcome: "Pay", choice: false })} data-testid={`button-overtime-${d.id}`}>{d.overtimeHours}h: {d.review?.action === "confirm" ? "paid · change" : "decide"}</Button>
             : <span className="text-xs text-muted-foreground">{d.overtimeHours}h undecided</span>) : "—"}</td>
           <td className="text-right">{canEdit && <Button size="sm" variant="ghost" onClick={() => setReview({ day: d, action: "confirm", clockIn: d.effectiveClockIn ?? d.actualClockIn ?? "", clockOut: d.effectiveClockOut ?? d.actualClockOut ?? "" })}><PenLine className="mr-1 h-4 w-4" />Decide</Button>}</td>
         </tr>)}</tbody>
@@ -183,7 +196,7 @@ function AttendanceTab({ view }: { view: MonthEndView }) {
       </div>
     </ReasonDialog>}
     {ot && <ReasonDialog open onOpenChange={(o) => !o && setOt(null)} title={`Overtime · ${ot.day.name} · ${ot.day.date} · ${ot.day.overtimeHours}h`} confirmLabel="Save decision"
-      description="Pay adds the hours to this month's pay. Reject pays nothing for them. Bank takes them out of this month's pay to be taken as time off."
+      description="Pay adds the hours to this month's pay. Reject pays nothing for them. Bank takes them out of this month's pay to be taken as time off. A day you confirmed already pays its overtime: choose Reject to refuse it. The saved overtime policy sets the smallest block that is paid and how the hours are rounded."
       onConfirm={async (reason) => {
         await payrollCall("PUT", `/api/payroll/month-end/${view.entity.id}/${view.month}/overtime/${encodeURIComponent(ot.day.id)}`, { outcome: ot.outcome, reason, employeeChoiceConfirmed: ot.choice });
         await refreshPayroll();
@@ -246,7 +259,8 @@ function SalesSection({ view }: { view: MonthInputsView }) {
     {dialog && <ReasonDialog open onOpenChange={(o) => !o && setDialog(null)} title={`${view.branches.find((b) => b.id === dialog.branchId)?.name} · ${monthLabel(dialog.month)} sales`}
       description="Gross per stream, then the VAT and the service charge inside it. The reason should say where the figures came from."
       onConfirm={async (reason) => {
-        const streams = Object.fromEntries(Object.entries(dialog.streams).filter(([, c]) => c.amount || c.vat || c.serviceCharge));
+        // SCRUM-1073: a branch that sold nothing is saved as zeros, so every stream is sent as typed.
+        const streams = dialog.streams;
         await payrollCall("PUT", `/api/payroll/inputs/${dialog.month}/revenue/${dialog.branchId}`, { streams, discounts: dialog.discounts, reason });
         await refreshPayroll();
       }}>
@@ -463,7 +477,7 @@ function FeedsTab({ month }: { month: string }) {
 
 const THIRD_PARTY = /third|someone else/i;
 
-function PreviewTab({ view, entityId, month, active }: { view: MonthEndView; entityId: string; month: string; active: boolean }) {
+function PreviewTab({ view, entityId, month, active, onOpenTab }: { view: MonthEndView; entityId: string; month: string; active: boolean; onOpenTab: (tab: MonthTab) => void }) {
   const preview = usePreview(entityId, month, active);
   const [show, setShow] = useState<"people" | "problems">("people");
   const [open, setOpen] = useState<string | null>(null);
@@ -473,10 +487,17 @@ function PreviewTab({ view, entityId, month, active }: { view: MonthEndView; ent
   const names = useMemo(() => ({ ...Object.fromEntries(view.people.map((p) => [p.id, p.name])), ...(preview.data?.branchNames ?? {}) }), [view.people, preview.data]);
   const problems = useMemo(() => (result?.exceptions ?? []).filter((e) => e.severity !== "info"), [result]);
   if (preview.isLoading) return <Skeleton className="h-64 w-full" />;
-  if (preview.error) return <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm"><p className="font-semibold">The month cannot be calculated yet</p><p>{errorText(preview.error)}</p></div>;
+  if (preview.error) return <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm"><p className="font-semibold">The month cannot be calculated yet</p><p>{errorText(preview.error)}</p>
+    {fixHint(errorText(preview.error)).text && <p className="mt-1 text-xs">How to fix: {fixHint(errorText(preview.error)).text}</p>}</div>;
   if (!preview.data) return null;
   const { calculation, signature, timing, frozen } = preview.data;
   const blocking = problems.filter((e) => e.severity === "blocking").length;
+  // SCRUM-1073: the unconfirmed days are one line with one way out, not one line per day.
+  const waitingDays = problems.filter((e) => e.kind === "attendance");
+  const listed: typeof problems = [
+    ...(waitingDays.length ? [{ id: "attendance-all", kind: "attendance", severity: "blocking" as const, message: `${waitingDays.length} attendance day${waitingDays.length === 1 ? " is" : "s are"} not confirmed` }] : []),
+    ...problems.filter((e) => e.kind !== "attendance"),
+  ];
   const approved = (id?: string) => !!id && view.thirdParty.some((a) => a.employeeId === id && a.current);
   return <div className="space-y-4">
     <p className="text-xs text-muted-foreground">{frozen
@@ -505,12 +526,16 @@ function PreviewTab({ view, entityId, month, active }: { view: MonthEndView; ent
           {open === p.id && <tr><td colSpan={8} className="bg-muted/30 px-3 py-3"><PersonLines person={p} names={names} /></td></tr>}
         </Fragment>)}</tbody>
       </table></div> :
-        <ul className="divide-y rounded-lg border text-sm" data-testid="problems-list">{problems.map((e) => <li key={e.id} className="flex flex-wrap items-start gap-2 px-3 py-2">
-          <Badge variant={e.severity === "blocking" ? "destructive" : "outline"}>{e.severity}</Badge><span className="flex-1">{withBranchNames(e.message, names)}</span>
+        <ul className="divide-y rounded-lg border text-sm" data-testid="problems-list">{listed.map((e) => { const hint = fixHint(e.message, e.staffId); return <li key={e.id} className="flex flex-wrap items-start gap-2 px-3 py-2">
+          <Badge variant={e.severity === "blocking" ? "destructive" : "outline"}>{e.severity}</Badge>
+          <span className="flex-1">{withBranchNames(e.message, names)}
+            {hint.text && <span className="mt-0.5 block text-xs text-muted-foreground" data-testid="problem-fix">How to fix: {hint.text}</span>}</span>
+          {hint.tab ? <Button size="sm" variant="outline" onClick={() => onOpenTab(hint.tab!)}>{hint.label}</Button>
+            : hint.href ? <Link href={hint.href} className="inline-flex h-9 items-center rounded-md border px-3 text-xs font-semibold hover:bg-muted">{hint.label}</Link> : null}
           {THIRD_PARTY.test(`${e.kind} ${e.message}`) && e.staffId && (approved(e.staffId)
             ? <Badge variant="secondary">Approved</Badge>
             : view.canManage && editable(view) && !frozen && <Button size="sm" variant="outline" onClick={() => setApprove({ employeeId: e.staffId!, name: result.people.find((p) => p.id === e.staffId)?.name ?? "" })}>Approve this payment</Button>)}
-        </li>)}
+        </li>; })}
           {!problems.length && <li className="px-3 py-4 text-center text-muted-foreground">No problems.</li>}</ul>}
       <Section title="Service charge" description="Each branch's pool from last month's sales, shared by the saved policy.">
         <ul className="divide-y text-sm">{calculation.service.map((s) => <li key={s.branchId} className="flex flex-wrap gap-3 py-1.5">
@@ -572,7 +597,7 @@ function ApprovalsTab({ view, active }: { view: MonthEndView; active: boolean })
     <ol className="grid grid-cols-2 gap-2 sm:grid-cols-4">{steps.map(([s, l], i) => <li key={s} className={`rounded-lg border p-3 text-sm ${i <= idx ? "border-primary bg-primary/10 font-semibold" : "text-muted-foreground"}`}>{i + 1}. {l}</li>)}</ol>
     <div className="space-y-1 text-sm">
       <p>Version {view.run.version}{view.run.gm ? ` · GM: ${view.run.gm.name}` : ""}{view.run.owner ? ` · Owner: ${view.run.owner.name}` : ""}</p>
-      {blockers.length > 0 && status !== "locked" && status !== "paid" && <p className="text-destructive"><Badge variant="destructive">{blockers.length} blockers</Badge> Lock is refused until every blocking exception is resolved.</p>}
+      {blockers.length > 0 && status !== "locked" && status !== "paid" && <p className="text-destructive"><Badge variant="destructive">{blockers.length} blockers</Badge> Lock is refused until every blocking problem is resolved. Open Check the month and press the blocking count: each line says how to fix it.</p>}
       {stale && <p className="text-destructive"><Badge variant="destructive">Stale</Badge> Source data changed since GM confirmation (signature mismatch). GM must confirm again.</p>}
       {preview.isLoading && <p className="text-xs text-muted-foreground">Checking the month…</p>}
       {preview.error != null && <p className="text-xs text-destructive">{errorText(preview.error)}</p>}

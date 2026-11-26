@@ -42,7 +42,7 @@ export function lockCompanyRun(data: PayrollWorld, document: CompanyPayrollDocum
   const calculation = calculateCompanyEngine(data, doc, month), result = calculation.entities.find(e => e.entityId === entityId)!;
   if (result.exceptions.some(e => e.severity === "blocking")) throw new Error("Resolve blocking exceptions before locking.");
   const outputs = generateCompanyOutputs(data, calculation, entityId);
-  if (outputs.uploadIssues?.length) throw new Error(`Fix upload details before locking: ${outputs.uploadIssues.join(" ")}`);
+  if (outputs.uploadIssues?.length) throw new Error(`Fix upload details before locking: ${outputs.uploadIssues.join(" ")} How to fix: open each person named here in Payroll Profiles and complete what is listed for them (ID number, title, given name, bank code and account, pay); a branch or company detail is completed in Payroll Setup. Then confirm as GM again and lock.`);
   if (outputs.difference !== 0) throw new Error(`Bank files + cash differ from net pay by ${outputs.difference}.`);
   if (doc.snapshots.some(s => s.entityId === entityId && s.month === month && s.version === run.version)) throw new Error("This version is already frozen.");
   const at = clock.now().toISOString();
