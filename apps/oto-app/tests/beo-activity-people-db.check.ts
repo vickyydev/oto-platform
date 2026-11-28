@@ -23,6 +23,7 @@
 //
 // Usage, from apps/oto-app, with DATABASE_URL set:
 //   npx tsx tests/beo-activity-people-db.check.ts
+import { noQuoteAnswer } from "./fixtures/till-billing";
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
 import { randomBytes, randomUUID, scryptSync } from "node:crypto";
@@ -57,12 +58,7 @@ const platform = createServer((req, res) => {
     const read = /^\/otoapp\/parties\/([^/]+)\/billing$/.exec(req.url ?? "");
     if (req.method === "GET" && read) {
       res.writeHead(200, { "content-type": "application/json" });
-      res.end(JSON.stringify({
-        additionalBills: [], eventId: read[1], state: "none",
-        park: { name: "ZZ TEST", branchName: "ZZ TEST park", address: null },
-        party: { title: "ZZ TEST 1032", date: "2099-03-14", startTime: null, endTime: null, packageName: null, kids: 10, adults: 4 },
-        quote: null, sale: null, noQuote: null, beoLines: [],
-      }));
+      res.end(JSON.stringify({ ...noQuoteAnswer(read[1]!), beoLines: [] }));
       return;
     }
     res.writeHead(404, { "content-type": "application/json" });
