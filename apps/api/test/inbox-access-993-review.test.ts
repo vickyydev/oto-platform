@@ -193,7 +193,7 @@ describe('SCRUM-993 adversarial category/channel policy review', () => {
     expect((await request('POST', url)).statusCode).toBe(404);
   });
   it('HIGH: the landed prebooking request keeps its stronger replay guard and denies revoked channel access before cached deposit details', async () => {
-    const [seededTemplate] = await ctx.db.select().from(s.template).where(and(eq(s.template.key, 'party_deposit_request'), eq(s.template.language, 'en'))).limit(1);
+    const [seededTemplate] = await ctx.db.select().from(s.template).where(and(eq(s.template.key, 'prebooking_deposit_request'), eq(s.template.language, 'en'))).limit(1);
     expect(seededTemplate).toBeDefined();
     await ctx.db.insert(s.template).values({ ...seededTemplate!, id: newId(), operatorId: f.operatorId });
     const key = newId(), url = `/inbox/conversations/${f.birthday.id}/prebooking`;

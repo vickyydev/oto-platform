@@ -708,14 +708,13 @@ describe('seed:demo-day End of Day fixture', () => {
 // --- The demo reset --------------------------------------------------------------------
 
 describe('demo reset', () => {
-  it('clears the closed days and the cash movements with the rest of a day of play', async () => {
-    const counts = await resetDemoData(ctx.db);
-    expect(counts.end_of_day).toBe(2);
-    expect(counts.cash_movement).toBe(2);
-    expect(await ctx.db.select().from(schema.endOfDay)).toHaveLength(0);
-    expect(await ctx.db.select().from(schema.cashMovement)).toHaveLength(0);
-    // The reset retains redeemed voucher history; a fresh demo on the same
-    // business date must use a new voucher sale identity and still seed cleanly.
-    expect((await seedDemoDay(ctx.db, { on: addDaysToIsoDate(D, -7) })).sales).toBe(11);
+  it('retains closed days and cash movements when the ledger includes bank payments', async () => {
+    const days = await ctx.db.select().from(schema.endOfDay);
+    const movements = await ctx.db.select().from(schema.cashMovement);
+    expect(days).toHaveLength(2);
+    expect(movements).toHaveLength(2);
+    await expect(resetDemoData(ctx.db)).rejects.toMatchObject({ code: 'GATEWAY_HISTORY_PRESENT' });
+    expect(await ctx.db.select().from(schema.endOfDay)).toEqual(days);
+    expect(await ctx.db.select().from(schema.cashMovement)).toEqual(movements);
   });
 });

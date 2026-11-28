@@ -1159,7 +1159,7 @@ function argumentsAt(text: string, open: number): string {
 }
 
 describe('C. Attention, read off the code', () => {
-  it('every Attention writer in the app’s whole tree names the park group of the row it is about: ten creates (round 5 restored the sick-day coverage alert), eight upserts, eighteen in all', () => {
+  it('every Attention writer in the app’s whole tree names the park group of the row it is about: nine creates and eight upserts after stuck clock-in alerts were consolidated', () => {
     const found: string[] = [];
     for (const { rel, text } of appSources()) {
       for (const m of text.matchAll(/\bstorage\.(createAttentionItem|upsertAttentionItem)\(/g)) {
@@ -1183,7 +1183,6 @@ describe('C. Attention, read off the code', () => {
         // Round 5 (Q1, H14): the sick-day coverage alert, in the sick person's park group.
         'server/routes.ts createAttentionItem employee.tenantId',
         // The night batches: the presence row, the time event, the assignment.
-        'server/scheduled-jobs.ts createAttentionItem presence.tenantId',
         'server/scheduled-jobs.ts createAttentionItem row.tenant_id',
         'server/scheduled-jobs.ts upsertAttentionItem assignment.tenantId',
         // The engine: the employee evaluated, or the park group the scheduling run is for.

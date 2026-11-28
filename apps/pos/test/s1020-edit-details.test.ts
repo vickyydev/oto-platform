@@ -111,7 +111,7 @@ describe('SCRUM-1020 (3): the till adds it where the form stands', () => {
   it('"Edit details" is on the form with a display paired or not, beside the private details', () => {
     expect(till.match(/data-testid="edit-details-open"/g)).toHaveLength(2);
     expect(till).toContain('{linkedDisplay.connected.length === 0 && <div className="mb-3 flex justify-end">');
-    expect(till).toMatch(/onClick=\{\(\) => setEditDetailsOpen\(true\)\}>Edit details<\/Button>\s*<Button size="sm" variant="outline" disabled=\{gateSaving\} onClick=\{\(\) => setConsentPrivateOpen\(true\)\}>Private child details<\/Button>/);
+    expect(till).toMatch(/onClick=\{\(\) => setEditDetailsOpen\(true\)\}>Edit details<\/Button>\s*<Button size="sm" className="min-h-11" variant="outline" disabled=\{gateSaving\} onClick=\{\(\) => setConsentPrivateOpen\(true\)\}>Private child details<\/Button>/);
   });
 
   it('the dialog adds a saved child of this family or a new child, and shows the family\'s ticks without changing them', () => {

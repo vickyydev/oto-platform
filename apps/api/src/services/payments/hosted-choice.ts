@@ -4,6 +4,8 @@ import { WEB_INVOICE_STATION_CODE } from '@oto/shared';
 import type { QrPayment } from '@oto/payments-2c2p';
 import { z } from 'zod';
 import { errors } from '../../lib/errors';
+import { audit } from '../audit';
+import { withTx, type OpContext } from '../tx';
 import type { AttemptRow } from './attempt';
 
 const choiceSchema = z.object({
@@ -29,8 +31,8 @@ export async function hostedChoicePage(db: Db, id: string, key: string) {
   return { amount: row!.amountSatang, method: payload.chosenMethod };
 }
 
-export async function selectHostedMethod(db: Db, qr: QrPayment, id: string, key: string, method: PayMethod) {
-  const claimed = await db.transaction(async tx => {
+export async function selectHostedMethod(db: Db, qr: QrPayment, id: string, key: string, method: PayMethod, context: OpContext = {}) {
+  const claimed = await withTx(db, context, 'payment.hosted_method_selected', async tx => {
     const [row] = await tx.select().from(paymentAttempt).where(eq(paymentAttempt.id, id)).for('update');
     const { choice, payload, expiresAt, invoiceNo } = readChoice(row, key);
     if (payload.chosenMethod) {
@@ -44,7 +46,10 @@ export async function selectHostedMethod(db: Db, qr: QrPayment, id: string, key:
     await tx.update(paymentAttempt).set({
       method, methodCode: method === 'card' ? 'card' : 'promptpay', payload: routed,
     }).where(eq(paymentAttempt.id, id));
-    return { routed, request: {
+    const scope = { operatorId: row!.operatorId, branchId: row!.branchId };
+    await audit.record(tx, { ...scope, actorAccountId: null, requestId: context.requestId, action: 'payment.hosted_method_selected',
+      entityType: 'payment_attempt', entityId: id, after: { method } });
+    return { scope, routed, request: {
       attemptId: id, invoiceNo, amountSatang: row!.amountSatang, childMerchantId,
       description: choice.description, frontendReturnUrl: choice.frontendReturnUrl,
       locale: choice.locale, paymentChannels: [method === 'card' ? 'CC' : choice.qrChannel],
@@ -57,10 +62,14 @@ export async function selectHostedMethod(db: Db, qr: QrPayment, id: string, key:
   if (!opened.webPaymentUrl) {
     throw errors.badRequest('The bank could not open this payment page. Please request a new link from the park.');
   }
-  const [saved] = await db.update(paymentAttempt).set({
-    payload: { ...claimed.routed, bankPaymentUrl: opened.webPaymentUrl, respCode: opened.respCode },
-  }).where(and(eq(paymentAttempt.id, id), eq(paymentAttempt.status, 'sent_to_terminal'),
-    gt(paymentAttempt.expiresAt, new Date()))).returning({ id: paymentAttempt.id });
-  if (!saved) throw errors.notFound('Payment link');
+  await withTx(db, context, 'payment.hosted_link_ready', async tx => {
+    const [saved] = await tx.update(paymentAttempt).set({
+      payload: { ...claimed.routed, bankPaymentUrl: opened.webPaymentUrl, respCode: opened.respCode },
+    }).where(and(eq(paymentAttempt.id, id), eq(paymentAttempt.status, 'sent_to_terminal'),
+      gt(paymentAttempt.expiresAt, new Date()))).returning({ id: paymentAttempt.id });
+    if (!saved) throw errors.notFound('Payment link');
+    await audit.record(tx, { ...claimed.scope, actorAccountId: null, requestId: context.requestId, action: 'payment.hosted_link_ready',
+      entityType: 'payment_attempt', entityId: id, after: { method } });
+  });
   return opened.webPaymentUrl;
 }

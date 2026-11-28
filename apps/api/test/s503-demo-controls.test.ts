@@ -70,13 +70,15 @@ async function liveDemoBooth() {
   return row!;
 }
 
-beforeAll(async () => {
+async function startFixture() {
   ctx = await createTestContext({ env: { OPS_TEST_CONTROLS: 'true' } });
   admin = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
   reception = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
   hkt = await branchIdByCode(ctx.db, CENTRAL_BRANCH_CODE);
   chalong = await branchIdByCode(ctx.db, CHALONG_BRANCH_CODE);
-}, 180_000);
+}
+
+beforeAll(startFixture, 180_000);
 
 afterAll(async () => {
   await ctx.close();
@@ -202,6 +204,13 @@ async function droppedOff(): Promise<{ memberId: string; childId: string; regist
 }
 
 describe('7 — the demo reset clears the supervised stays of a day of play', () => {
+  beforeAll(async () => {
+    // The earlier demo-day fixture includes bank transactions. Exercise the
+    // allowed reset with a separate cash-only park and its own staff sessions.
+    await ctx.close();
+    await startFixture();
+  }, 180_000);
+
   it('a checked-in drop-off child, its collector, hand-back and waiver no longer stop the reset; configuration and photos stay', async () => {
     const stay = await droppedOff();
     const [stayRow] = await ctx.db.select().from(checkin).where(eq(checkin.id, stay.checkinId));

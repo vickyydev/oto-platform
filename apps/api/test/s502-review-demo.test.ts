@@ -92,13 +92,15 @@ async function liveParkRows(on: TestContext, branchId: string) {
   return { sales: sales!.n, spins: spins!.n };
 }
 
-beforeAll(async () => {
+async function startFixture() {
   ctx = await createTestContext({ files: true, env: { ...STORAGE_ENV, OPS_TEST_CONTROLS: 'true' } });
   admin = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
   reception = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
   manager = await signInAs(ctx.app, BRANCH_MANAGER.phone, BRANCH_MANAGER.password);
   central = await branchIdByCode(ctx.db, CENTRAL_BRANCH_CODE);
-}, 300_000);
+}
+
+beforeAll(startFixture, 300_000);
 
 afterAll(async () => {
   await ctx?.close();
@@ -255,6 +257,13 @@ async function stayFor(
 const STAY_TYPES = ['checkin', 'registration', 'guardian', 'release', 'supervision_waiver'];
 
 describe('7 review — the reset over supervised stays made through the real routes', () => {
+  beforeAll(async () => {
+    // The earlier demo-day fixture includes bank transactions. Exercise the
+    // allowed reset with a separate cash-only park and its own staff sessions.
+    await ctx.close();
+    await startFixture();
+  }, 300_000);
+
   let mali: { id: string; ploy: { id: string; allergies: string | null; updatedAt: Date } };
   let released: { registrationId: string; checkinId: string; saleId: string };
   let walkUp: { registrationId: string; checkinId: string };

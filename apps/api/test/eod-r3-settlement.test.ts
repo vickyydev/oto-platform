@@ -271,14 +271,17 @@ describe('S2-15a settlement ledger', () => {
       payload: { outcome: 'settled', deviceId, lines } });
     expect(res.statusCode).toBe(401);
   });
-  it('resets settlement evidence before payment facts while keeping terminal configuration', async () => {
-    const counts = await resetDemoData(ctx.db);
-    expect(counts.settlement_batch).toBeGreaterThan(0);
-    expect(counts.settlement_line).toBeGreaterThan(0);
-    expect(counts.settlement_command).toBeGreaterThan(0);
-    expect(await ctx.db.select().from(schema.settlementBatch)).toHaveLength(0);
-    expect(await ctx.db.select().from(schema.settlementLine)).toHaveLength(0);
+  it('keeps settlement evidence and terminal configuration when a bank attempt exists', async () => {
+    const batches = await ctx.db.select().from(schema.settlementBatch);
+    const lines = await ctx.db.select().from(schema.settlementLine);
+    const commands = await ctx.db.select().from(schema.settlementCommand);
+    expect(batches.length).toBeGreaterThan(0);
+    expect(lines.length).toBeGreaterThan(0);
+    expect(commands.length).toBeGreaterThan(0);
+    await expect(resetDemoData(ctx.db)).rejects.toMatchObject({ code: 'GATEWAY_HISTORY_PRESENT' });
+    expect(await ctx.db.select().from(schema.settlementBatch)).toEqual(batches);
+    expect(await ctx.db.select().from(schema.settlementLine)).toEqual(lines);
+    expect(await ctx.db.select().from(schema.settlementCommand)).toEqual(commands);
     expect(await ctx.db.select().from(schema.device).where(eq(schema.device.id, deviceId))).toHaveLength(1);
   });
-
 });

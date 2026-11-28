@@ -91,16 +91,17 @@ describe('the till publishes the step and shows staff the family’s screen', ()
   it('every new form starts on the first step', () => {
     // SCRUM-1018 — the number confirmation is gone from the gate, so the step
     // now follows the number and the channel it starts from.
-    expect(till).toMatch(/setSuperParentContactMethod\(customerContactChannel\);\s*setConsentFamilyStep\('children'\);/);
+    expect(till).toMatch(/setSuperParentContactMethod\(customerContactChannel\);\s*setConsentFamilyView\(null\);\s*setConsentFamilyStep\('children'\);/);
   });
 
-  it('beside the staff gate, only while the form is on a working paired display', () => {
+  it('uses the full staff page for the paired guest form until staff opens the checks', () => {
     expect(till).toMatch(/const consentMirror = step === 7 && !!consent && !staffTicks && !inlineDisplay;/);
-    expect(till).toMatch(/\$\{inlineDisplay \|\| consentMirror \? 'w-1\/2 border-r border-foreground\/10' : 'w-full'\}/);
+    expect(till).toContain('guestForm={consentMirror && consent && !staffChecksOpen ? (');
+    expect(till).toContain('aria-pressed={staffChecksOpen}');
   });
 
   it('as the till holds it, read-only, on the family’s step, in the staff’s language (a provider of its own)', () => {
-    const mirror = till.match(/\{consentMirror && consent && \([\s\S]*?\n {8}\)\}/)?.[0] ?? '';
+    const mirror = till.match(/guestForm=\{consentMirror && consent && !staffChecksOpen \? \(([\s\S]*?)\) : undefined\}/)?.[1] ?? '';
     expect(mirror).toContain('<LanguageProvider>');
     expect(mirror).toMatch(/<PublicConsentCapture prompt=\{\{ \.\.\.consent, kind: 'consent', requestId: 'staff-mirror' \}\} busy=\{false\}/);
     expect(mirror).toContain('onAction={() => undefined} mirror={{ step: consentFamilyStep, photos: consentMirrorPhotos }}');

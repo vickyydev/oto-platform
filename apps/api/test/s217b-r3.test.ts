@@ -10,7 +10,7 @@ import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { account, opsExpectation, opsLast, opsRun, type Db } from '@oto/db';
 import { createTestDatabase } from '@oto/db/testing';
-import { isoDateInTz, newId } from '@oto/shared';
+import { addDaysToIsoDate, isoDateInTz, newId } from '@oto/shared';
 import {
   ADMIN,
   CENTRAL_BRANCH_CODE,
@@ -1047,6 +1047,8 @@ describe('I. OTOAPP_JOBS_KEYS — read, refused when malformed, empty in a test'
 describe('K. review F1 — a park group the app holds staff in, with no key here, fails every run naming it', () => {
   const tenantU = newId();
   const keyU = key();
+  // Keep this replay scenario separate from the forced jobs for today's date.
+  const scenarioDay = addDaysToIsoDate(isoDateInTz(new Date(), BANGKOK), 365);
 
   beforeAll(async () => {
     await q(`insert into tenants (id, name, slug) values ($1, 'ZZ r3 unkeyed', $2)`, [tenantU, `zz-r3-u-${tenantU.slice(-6)}`]);
@@ -1062,7 +1064,7 @@ describe('K. review F1 — a park group the app holds staff in, with no key here
 
   it('the keyed park group runs and is done; the run fails naming U in its code, its words and its detail; nothing is sent for U', async () => {
     stub.reset();
-    const date = '2026-11-26';
+    const date = scenarioDay;
     const env = envFor([[tenantA, keyA]]);
     let clock = at(date, '00:05');
     const job = nightJob('midnight', () => clock, env);
@@ -1103,8 +1105,8 @@ describe('K. review F1 — a park group the app holds staff in, with no key here
     stub.reset();
     const env = envFor([[tenantA, keyA]]);
     for (const [name, clock] of [
-      ['reconcile', at('2026-11-26', '03:05')],
-      ['presence', at('2026-11-26', '06:00')],
+      ['reconcile', at(scenarioDay, '03:05')],
+      ['presence', at(scenarioDay, '06:00')],
     ] as const) {
       const job = nightJob(name, () => clock, env);
       expect(await runnerFor(job, env).runJob(job.name, { force: true }), name).toBe('failed');
@@ -1121,7 +1123,7 @@ describe('K. review F1 — a park group the app holds staff in, with no key here
     stub.reset();
     KEYS[tenantU] = keyU;
     const env = envFor([[tenantA, keyA], [tenantU, keyU]]);
-    const date = '2026-11-26';
+    const date = scenarioDay;
     const job = nightJob('midnight', () => at(date, '00:15'), env);
     expect(await runnerFor(job, env).runJob(job.name, { force: true })).toBe('ok');
     const [run] = await runsFor(job.name, date);

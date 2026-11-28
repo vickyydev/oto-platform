@@ -269,7 +269,7 @@ export function webhookRoutes(app: App): Promise<void> {
     const { attemptId, key, method } = req.params;
     const gateway = gatewayFor(app.env, req.log);
     if (gateway.selection.provider !== '2c2p') throw errors.notFound('Payment link');
-    const url = await selectHostedMethod(app.db, gateway.qr, attemptId, key, method);
+    const url = await selectHostedMethod(app.db, gateway.qr, attemptId, key, method, { requestId: req.id });
     return reply.header('referrer-policy', 'no-referrer').header('cache-control', 'no-store').redirect(url, 303);
   });
 

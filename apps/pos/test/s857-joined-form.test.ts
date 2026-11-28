@@ -199,10 +199,12 @@ describe('the till’s copy of the family’s screen shows their photo, and neve
     none.unmount();
   });
 
-  it('shows staff what the family still needs before Done, on every step at once when their screen does not say', () => {
+  it('shows the unticked agreement read-only on the staff mirror and keeps the Done controls on the guest display', () => {
     const form = open({ prompt: promptOf({ requestId: 'staff-mirror', familyStep: undefined, consentAcknowledged: false }),
       mirror: { step: null }, sends: false });
-    expect(words(form.testId('consent-missing'))).toContain('superviseConsent.missingConsent');
+    expect(form.testId('public-consent-ack')?.props.checked).toBe(false);
+    expect(form.testId('public-consent-ack')?.props.disabled).toBe(true);
+    expect(form.testId('consent-missing')).toBeUndefined();
     form.view.unmount();
   });
 });
@@ -244,9 +246,9 @@ describe('the paired display', () => {
   const display = readFileSync(resolve(import.meta.dirname, '../src/pages/Display.tsx'), 'utf8');
 
   it('does not lock the form for a photo answer, as for a fill, and keeps a refusal of either quiet', () => {
-    expect(display).toMatch(/return action === 'fill' \|\| action === 'photo';/);
+    expect(display).toMatch(/return action === 'fill' \|\| action === 'view' \|\| action === 'photo';/);
     expect(display).toMatch(/pending\.current\.type === 'display\.consent' && isLive\(pending\.current\.payload\)\)\s*&& \(!answer \|\| isLive\(/);
-    expect(display).toContain("send('display.consent', action, action.action === 'fill' || action.action === 'photo')");
+    expect(display).toContain("send('display.consent', action, action.action === 'fill' || action.action === 'view' || action.action === 'photo')");
     expect(display).toContain('sendPhoto={(form, dataUrl) => sendDisplayConsentPhoto(bearerRef.current, form, dataUrl)}');
   });
 });

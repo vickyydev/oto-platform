@@ -63,6 +63,10 @@ const MERCHANT = 'OTOTESTMERCHANT';
 const WEBHOOK_TOKEN = 'a-path-filter-not-a-credential';
 /** The seeded Loy Krathong range — a Tuesday, priced as a weekend. */
 const HOLIDAY = '2026-11-24';
+// Gateway tests need an in-window weekend price regardless of the real date.
+const nextWeekend = new Date();
+nextWeekend.setUTCDate(nextWeekend.getUTCDate() + 7 + (6 - nextWeekend.getUTCDay()));
+const nextSaturday = nextWeekend.toISOString().slice(0, 10);
 /**
  * A plain weekday inside the bookable window, computed so this file never goes
  * stale: the server refuses a visit date before the branch's trading day or
@@ -144,7 +148,7 @@ async function book(over: Record<string, unknown> = {}) {
       phone: '0812345678',
       parentName: 'Khun Mali',
       tier: 'thai',
-      visitDate: HOLIDAY,
+      visitDate: nextSaturday,
       lines: [{ ...FAMILY, packageId: oneHourId }],
       ...over,
     },
@@ -268,7 +272,8 @@ const today = (): string => businessDate(new Date(), timezone, parseDayStart(day
 
 describe('the server quotes the booking itself', () => {
   it('prices 2 kids + 2 adults on the seeded holiday at weekend prices, socks included', async () => {
-    const made = await bookOk();
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-11-20T05:00:00Z') });
+    const made = await bookOk({ visitDate: HOLIDAY });
     // Thai 1 Hour Play: kid ฿520 at the weekend (฿420 on a weekday); adults at
     // the weekend admission ฿500 (฿350); two pairs of socks at ฿50.
     // 2 × 520 + 2 × 500 + 2 × 50 = ฿2,140. VAT is inclusive, so it adds nothing.

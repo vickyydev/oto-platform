@@ -645,24 +645,25 @@ describe('the seeded discount rows are the till’s own rows', () => {
 
 // --- After a demo reset -----------------------------------------------------------------------
 
-describe('after Reset demo data, a re-press is truthful and duplicates nothing', () => {
-  it('the sales come back once, the booth keeps its record, and the voucher sale wins a voucher of its own', async () => {
+describe('after a bank-backed demo day, reset preserves the ledger', () => {
+  it('a refused reset preserves the booth, original voucher sale and spin count on replay', async () => {
     const booth = await demoBooth();
     const reset = await post(admin, '/ops/demo-reset', { confirm: 'RESET DEMO DATA' });
-    expect(reset.statusCode, reset.body).toBe(200);
+    expect(reset.statusCode).toBe(409);
+    expect(reset.json().error.code).toBe('GATEWAY_HISTORY_PRESENT');
     const spinsBefore = await ctx.db.select().from(spin).where(and(eq(spin.stationId, booth.id), eq(spin.businessDate, T)));
     expect(spinsBefore).toHaveLength(6);
 
     const counts = await seedDemoDay(ctx.db);
-    expect(counts).toMatchObject({ sales: 11, skipped: 0, discounts: 1, discountsToppedUp: 0, boothSpins: 1, boothSpinsPresent: 6 });
+    expect(counts).toMatchObject({ sales: 0, skipped: 11, discounts: 0, discountsToppedUp: 0, boothSpins: 0, boothSpinsPresent: 6 });
     const spins = await ctx.db.select().from(spin).where(and(eq(spin.stationId, booth.id), eq(spin.businessDate, T)));
-    expect(spins).toHaveLength(7);
-    expect(new Set(spins.map((s) => s.voucherId)).size).toBe(7);
+    expect(spins).toHaveLength(6);
+    expect(new Set(spins.map((s) => s.voucherId)).size).toBe(6);
     const spent = await demoSale(T, 'voucher-discount');
     const [won] = await ctx.db.select().from(voucher).where(eq(voucher.saleId, spent.id));
     expect(won).toMatchObject({ source: 'booth', status: 'redeemed' });
     expect(spins.map((s) => s.voucherId)).toContain(won!.id);
     const again = await seedDemoDay(ctx.db);
-    expect(again).toMatchObject({ sales: 0, skipped: 11, discounts: 0, boothSpins: 0, boothSpinsPresent: 7 });
+    expect(again).toMatchObject({ sales: 0, skipped: 11, discounts: 0, boothSpins: 0, boothSpinsPresent: 6 });
   });
 });

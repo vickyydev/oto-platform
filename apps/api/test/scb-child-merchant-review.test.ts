@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, expect, it, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
-import { branch, paymentAttempt } from '@oto/db';
+import { auditLog, branch, paymentAttempt } from '@oto/db';
 import { SimulatorQrPayment } from '@oto/payments-2c2p';
 import { hostedChoicePage, selectHostedMethod } from '../src/services/payments/hosted-choice';
 import { hasGatewayHistory } from '../src/services/demo-reset';
@@ -39,6 +39,12 @@ it('a deposit link opens one bank checkout on its original branch and keeps the 
   await expect(selectHostedMethod(ctx.db, gateway, id, key, 'qr')).rejects.toThrow();
   const [saved] = await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.id, id));
   expect(saved).toMatchObject({ status: 'sent_to_terminal', method: 'card', payload: { childMerchantId: 'CARDS' } });
+  const events = await ctx.db.select({ action: auditLog.action, after: auditLog.after }).from(auditLog)
+    .where(eq(auditLog.entityId, id));
+  expect(events.sort((a, b) => a.action.localeCompare(b.action))).toEqual([
+    { action: 'payment.hosted_link_ready', after: { method: 'card' } },
+    { action: 'payment.hosted_method_selected', after: { method: 'card' } },
+  ]);
   expect(await hasGatewayHistory(ctx.db)).toBe(true);
   await ctx.db.update(paymentAttempt).set({ status: 'cancelled' }).where(eq(paymentAttempt.id, id));
   await expect(choice()).rejects.toThrow();

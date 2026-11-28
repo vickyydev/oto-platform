@@ -404,7 +404,7 @@ describe('review — every /analytics route is guarded per branch', () => {
 // --- H10, for real --------------------------------------------------------------------------
 
 describe('review — H10: the frozen legacy days never move', () => {
-  it('H10 — two rounds of loader and every rollup path, real sales beside and on the frozen days, a demo reset between: same bytes, same xmin, same ctid', async () => {
+  it('H10 — two rounds of loader and every rollup path, real sales beside and on the frozen days, a refused demo reset between: same bytes, same xmin, same ctid', async () => {
     const before = await legacyAsStored();
     expect(before.map((r) => r.bytes.includes(demo))).toEqual([true, true]);
     expect(before).toHaveLength(2);
@@ -461,18 +461,20 @@ describe('review — H10: the frozen legacy days never move', () => {
       expect(await legacyAsStored(), `round ${round}`).toEqual(before);
     }
 
-    // The demo reset deletes every sale; the rollup then empties the platform's
-    // own days there. The frozen days are not facts and are not touched.
+    // The seed includes bank payments. Both sources must survive the refused reset.
+    const retainedCount = (await platformDay(demo, PISELL.businessDate))!.txnCount;
+    expect(retainedCount).toBeGreaterThan(0);
     const reset = await ctx.app.inject({
       method: 'POST',
       url: '/ops/demo-reset',
       headers: { cookie: admin },
       payload: { confirm: 'RESET DEMO DATA' },
     });
-    expect(reset.statusCode, reset.body).toBe(200);
+    expect(reset.statusCode).toBe(409);
+    expect(reset.json().error.code).toBe('GATEWAY_HISTORY_PRESENT');
     await rollUp();
     await runDailyRollupJob(ctx.db, new Date());
-    expect((await platformDay(demo, PISELL.businessDate))!.txnCount).toBe(0);
+    expect((await platformDay(demo, PISELL.businessDate))!.txnCount).toBe(retainedCount);
     expect(await legacyAsStored()).toEqual(before);
 
     // The summary serves the frozen day as stored, and the read moves nothing.

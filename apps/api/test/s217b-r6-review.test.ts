@@ -625,7 +625,7 @@ describe('A. fences and seams', () => {
       // access check (server/lib/beoActivityPeopleWrite.ts); the BEO's Save refuses in words, before it
       // writes anything, a dish's serving time that is no time of day (servingRefusal); no PDF, file,
       // bucket or public-folder door is added; where the BEO's documents live is unchanged.
-      'beo-routes.ts': '5a717716c11f918605b9fb34126a1556a4a6e3dfef2ef08618d58be50de1092f',
+      'beo-routes.ts': '8852aed7407bc71c9ebd1bf84b73b8a7029721569ccc561f6c6ab8ea94eebeea',
       'orgChartRoutes.ts': 'eff8d4478165e8b0157ef07d37891222104f751b49932e70f525f06366fe9d90',
     };
     for (const [file, hash] of Object.entries(main)) expect(sha256(committed(join(APP_SERVER, file))), file).toBe(hash);

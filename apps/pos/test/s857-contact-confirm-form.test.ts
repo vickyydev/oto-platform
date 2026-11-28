@@ -239,7 +239,7 @@ describe('what the till does with it', () => {
 
   it('no gate asks the confirmation any more', () => {
     expect(till).not.toMatch(/setSuperContactConfirmation|contactConfirmationStands|setConsentContactLegacy|onContactConfirmedChange/);
-    expect(till).toMatch(/setSuperParentContactMethod\(customerContactChannel\);\s*setConsentFamilyStep\('children'\);/);
+    expect(till).toMatch(/setSuperParentContactMethod\(customerContactChannel\);\s*setConsentFamilyView\(null\);\s*setConsentFamilyStep\('children'\);/);
   });
 
   it('every copy of the form still writes the registration’s contact; the family’s copy shows the number, staff change it', () => {

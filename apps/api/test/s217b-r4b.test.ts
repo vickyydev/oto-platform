@@ -658,9 +658,8 @@ describe('C. read off the code', () => {
         }
       }
     }
-    // The round 4a review counted nine gated creators: seven in routes.ts, two in the night batches.
-    // Round 5 restored the app's tenth, the sick-day coverage alert (Q1, H14), in the person's park group.
-    expect(counted).toEqual({ createAttentionItem: 10, upsertAttentionItem: 8 });
+    // The clock-in fix consolidated the two stuck-clock alert writers. The sick-day alert remains scoped.
+    expect(counted).toEqual({ createAttentionItem: 9, upsertAttentionItem: 8 });
     expect(offenders).toEqual([]);
   });
 

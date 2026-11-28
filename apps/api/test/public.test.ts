@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { attendee, auditLog, booking, branch, operator } from '@oto/db';
 import { newId } from '@oto/shared';
 import { createTestContext, lastCode, teardownAll, type TestContext } from './helpers';
@@ -369,7 +369,9 @@ describe('public booking creation — server-side pricing', () => {
     expect(audits.length).toBeGreaterThan(0);
   });
 
-  it('tourist pays the flat adult admission; weekend/holiday rates apply', async () => {
+  it('tourist pays the flat adult admission; weekend/holiday rates apply', async (task) => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-11-20T05:00:00Z') });
+    task.onTestFinished(() => { vi.useRealTimers(); });
     const packages = await getPackages();
     const oneHour = packages.find((p) => p.name === '1 Hour Play')!;
     const res = await ctx.app.inject({
