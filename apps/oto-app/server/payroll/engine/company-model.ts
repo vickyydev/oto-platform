@@ -78,6 +78,7 @@ export interface CompanyDraft {
   audit: CompanyAudit[]; approvedSignature?: string; gmActor?: string; ownerActor?: string;
 }
 export interface CompanyPayrollDocument {
+  boothAwards?: import("@shared/booth-bonus").BoothBonusLine[];
   version: 1; servicePolicies: Partial<Record<BranchId, ServicePolicy[]>>;
   incentives: CompanyIncentive[]; months: Record<string, CompanyMonthInputs>;
   runs: Record<string, CompanyDraft>; snapshots: CompanySnapshot[]; audit: CompanyAudit[];

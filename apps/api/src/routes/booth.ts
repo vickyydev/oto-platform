@@ -859,6 +859,7 @@ export async function boothRoutes(app: App): Promise<void> {
     dutyText: z.string().max(BOOTH_DUTY_RULE_MAX_CHARS),
   });
   const DutyView = z.object({
+    bonus: z.object({rateSatang:z.number().int(),window:z.string(),from:z.string()}).nullable(),
     businessDate: z.string(),
     rule: DutyRule,
     roster: z.array(DutyAssignment),

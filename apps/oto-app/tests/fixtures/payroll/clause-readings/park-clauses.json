@@ -114,56 +114,35 @@
             "type": "bonus",
             "bonus": {
               "cap": null,
-              "team": "Sale Booth Team",
+              "team": null,
               "unit": {
-                "counted": "team-total",
-                "inputKey": "returned-flyers",
-                "described": "returned flyer"
+                "described": "redeemed booth voucher",
+                "inputKey": "booth-vouchers",
+                "counted": "per-person"
               },
               "basis": "baht-per-unit",
-              "split": "equal",
+              "split": null,
               "percent": null,
               "revenue": null,
-              "sharing": "team",
+              "sharing": "own",
               "joinPool": null,
               "threshold": null,
               "bahtPerUnit": 10
             },
             "quote": "10 baht per returned flyer, devided by the Sale Booth Team",
-            "plainWords": "Pays 10 baht for every returned flyer counted in the month, and that pool is split among the Sale Booth Team. The clause does not say how the split is worked out, so it is treated as an equal division.",
+            "plainWords": "Booth voucher bonus at 10 baht per used voucher, counted from the booth and till records. Paid in full to each person named on the voucher (owner, 28 November 2026); the contract wording says divided by the team.",
             "notBonusKind": null,
             "needsPersonWhy": null
           }
         ],
-        "summary": "The employee shares in a pool of 10 baht for each returned flyer, with the pool divided among the Sale Booth Team.",
-        "questions": [
-          "Is the returned-flyer count one total for the whole Sale Booth Team, or counted for this employee alone?",
-          "Who counts as a member of the Sale Booth Team for this pool, and should the pool be split equally or by days worked?",
-          "Other clauses for the same Sale Booth Team pay 15 and 30 baht per returned flyer; is 10 baht correct for this employee?",
-          "Which park's returned flyers are counted for this employee?"
-        ]
+        "summary": "Booth voucher bonus at 10 baht per used voucher, counted from the booth and till records. Paid in full to each person named on the voucher (owner, 28 November 2026); the contract wording says divided by the team.",
+        "questions": []
       },
       "assignees": [
         "hkc-036",
         "hkc-037"
       ],
-      "rules": [
-        {
-          "kind": "unit-pool",
-          "rate": 10,
-          "inputKey": "returned-flyers",
-          "target": null,
-          "cap": null,
-          "streams": [],
-          "branches": [],
-          "team": "sale booth team",
-          "name": "Contract · 10 baht per returned flyer, shared by Sale Booth Team"
-        }
-      ],
-      "amounts": {
-        "hkc-036": 2100,
-        "hkc-037": 2100
-      }
+      "rules": []
     },
     {
       "n": 2,
@@ -178,56 +157,35 @@
             "type": "bonus",
             "bonus": {
               "cap": null,
-              "team": "Sale Booth Team",
+              "team": null,
               "unit": {
-                "counted": "team-total",
-                "inputKey": "returned-flyers",
-                "described": "returned flyer"
+                "described": "redeemed booth voucher",
+                "inputKey": "booth-vouchers",
+                "counted": "per-person"
               },
               "basis": "baht-per-unit",
-              "split": "equal",
+              "split": null,
               "percent": null,
               "revenue": null,
-              "sharing": "team",
+              "sharing": "own",
               "joinPool": null,
               "threshold": null,
               "bahtPerUnit": 15
             },
             "quote": "15 baht per returned flyer, devided by the Sale Booth Team",
-            "plainWords": "Pays 15 baht for every returned flyer counted in the month. The total is one pool divided among the Sale Booth Team.",
+            "plainWords": "Booth voucher bonus at 15 baht per used voucher, counted from the booth and till records. Paid in full to each person named on the voucher (owner, 28 November 2026); the contract wording says divided by the team.",
             "notBonusKind": null,
             "needsPersonWhy": null
           }
         ],
-        "summary": "Pays 15 baht for each returned flyer, with the resulting pool shared among the Sale Booth Team.",
-        "questions": [
-          "Is the returned-flyer count one number for the whole Sale Booth Team, or counted for this employee alone?",
-          "Who belongs to the Sale Booth Team, and is the pool split equally or by days worked?",
-          "Other clauses pay 10 and 30 baht per returned flyer to the same Sale Booth Team - is 15 baht correct for this employee?",
-          "Is the count for this employee's own park only, or for both parks together?"
-        ]
+        "summary": "Booth voucher bonus at 15 baht per used voucher, counted from the booth and till records. Paid in full to each person named on the voucher (owner, 28 November 2026); the contract wording says divided by the team.",
+        "questions": []
       },
       "assignees": [
         "hkc-038",
         "hch-018"
       ],
-      "rules": [
-        {
-          "kind": "unit-pool",
-          "rate": 15,
-          "inputKey": "returned-flyers",
-          "target": null,
-          "cap": null,
-          "streams": [],
-          "branches": [],
-          "team": "sale booth team",
-          "name": "Contract · 15 baht per returned flyer, shared by Sale Booth Team"
-        }
-      ],
-      "amounts": {
-        "hkc-038": 3150,
-        "hch-018": 3150
-      }
+      "rules": []
     },
     {
       "n": 3,
@@ -738,33 +696,29 @@
             "type": "bonus",
             "bonus": {
               "cap": null,
-              "team": "Sale Booth team",
+              "team": null,
               "unit": {
-                "counted": "team-total",
-                "inputKey": "returned-flyers",
-                "described": "returned flyer"
+                "described": "redeemed booth voucher",
+                "inputKey": "booth-vouchers",
+                "counted": "per-person"
               },
               "basis": "baht-per-unit",
-              "split": "equal",
+              "split": null,
               "percent": null,
               "revenue": null,
-              "sharing": "team",
+              "sharing": "own",
               "joinPool": null,
               "threshold": null,
               "bahtPerUnit": 30
             },
             "quote": "30 baht per returned flyer, devided by the Sale Booth team",
-            "plainWords": "Pay 30 baht for every returned flyer counted in the month. The total is one pool divided among the Sale Booth team.",
+            "plainWords": "Booth voucher bonus at 30 baht per used voucher, counted from the booth and till records. Paid in full to each person named on the voucher (owner, 28 November 2026); the contract wording says divided by the team.",
             "notBonusKind": null,
             "needsPersonWhy": null
           }
         ],
-        "summary": "Pays 30 baht for each returned flyer, with the resulting amount shared out among the Sale Booth team.",
-        "questions": [
-          "Is the returned-flyer count one number for the whole Sale Booth team, or counted separately for this employee?",
-          "Who is in the Sale Booth team, and should the pool be split equally or by days worked?",
-          "Other clauses pay 10 and 15 baht per returned flyer to the same Sale Booth team — is 30 baht correct for this employee?"
-        ]
+        "summary": "Booth voucher bonus at 30 baht per used voucher, counted from the booth and till records. Paid in full to each person named on the voucher (owner, 28 November 2026); the contract wording says divided by the team.",
+        "questions": []
       }
     },
     {

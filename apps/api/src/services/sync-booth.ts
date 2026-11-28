@@ -21,6 +21,7 @@ import { normaliseStaffLabel } from './booth-attribution';
 import { boothBusinessDate, boothDutyRosterForBox } from './booth-duty';
 import { raiseAlert } from './ops';
 import type { Tx } from './tx';
+import { boothPayrollEmployees } from './payroll-booth-vouchers';
 import type { EventHandler, PreparedEvent } from './sync';
 
 /**
@@ -399,7 +400,9 @@ export const BOOTH_HANDLERS: Record<string, EventHandler> = {
        * booth's odds explains nothing.
        */
       const [version] = await tx
-        .select({ id: boothConfigVersion.id })
+        .select({ id: boothConfigVersion.id,
+          staffPrinted: sql<boolean>`coalesce(${boothConfigVersion.bundle}->'settings'->>'voucherShowStaff','true') <> 'false'`,
+        })
         .from(boothConfigVersion)
         .where(
           and(
@@ -492,6 +495,8 @@ export const BOOTH_HANDLERS: Record<string, EventHandler> = {
           staffAccountId,
           staffLabel,
           dutyAccountIds: payload.dutyAccountIds,
+          dutyStaffPrinted: version.staffPrinted,
+          dutyEmployeeIds: await boothPayrollEmployees(tx, operatorId, payload.dutyAccountIds),
           simulated: payload.simulated,
         },
         requestId: null,

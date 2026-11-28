@@ -22,6 +22,7 @@ import { registered } from "./payroll/harness";
 import { createSeedData, parityExpected } from "./payroll/seed-world";
 import "./payroll/cases/company-calculations.cases";
 import "./payroll/cases/company-rewards.cases";
+import "./payroll/cases/booth-bonus.cases";
 import "./payroll/cases/company-workflow.cases";
 import "./payroll/cases/company-sources.cases";
 import "./payroll/cases/company-issue-review.cases";

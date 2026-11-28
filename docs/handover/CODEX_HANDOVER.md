@@ -1,3 +1,5 @@
+**28 November 2026, SCRUM-1076 - Payroll: 10 baht per redeemed booth voucher to each staff member named on it, counted from the booth and till records.** The booth voucher changes, receipt-reuse correction, generated API types, migration and tests from `ec69150f85f52cd01f3712603873c2f2f4c41ada` are together on the repaired main base `2696de697ef09bb0a75ff4e55435f7ef6c4d29c0`. The payroll clauses follow as a separate change. The integrated staging release and pictures are pending.
+
 **28 November 2026, main release of the CI repairs.** Watch the exact main push SHA. On green, read the ten Render staging revisions and open launcher sign-in, Tickets on the separately verified virtual till, the HR dashboard and Inbox. The sign-in wording improvement has its own [staging evidence on the sign-in ticket](https://oto-suite-dev.atlassian.net/browse/SCRUM-1061) and follows this landing. The HR production rehearsal is complete on its release branch and both payroll streams remain on staging-only lanes.
 
 **28 November 2026, birthday-form fixture update.** Retest all eleven suites against the new shared loopback till, then verify the release from its exact main SHA. Staging sales, live billing and the offline guard are unchanged by the fixture update.
@@ -7,6 +9,12 @@
 **28 November 2026, automatic checks in progress.** Inspect the second candidate on [the repair pull request](https://github.com/vickyydev/oto-platform/pull/16), including all three API groups, the till, and the HR app. Confirm a green main run and read back all ten staging revisions before closing the repair. The live HR rehearsal is separate.
 
 **28 November 2026, automatic-check repair candidate.** Verify the open repair branch with the hosted suites, correct any remaining failures, then coordinate the main landing and all ten staging checks. No service setting changed. The local HR rehearsal has priority for available memory. [Work order](CODEX_WORK_ORDER_2026-11-28.md)
+
+**28 November 2026, booth voucher database receipts.** Staging job `job-dc5c0km1egvs73bcoiq0` counted zero surviving paid October redemptions. The original counted rows remained unchanged in the migrated-HR replay test. The booth and till are ready for synthetic staff, a memory-only printer, staged cash redemptions and the independent reconciliation.
+
+**28 November 2026, resume the booth voucher and flyer checks.** Draft PR 17 includes the generated API contract, the surviving-sale replay fix and the three updated flyer fixtures. The payroll suite and focused API database review passed. Keep the isolated staging stations available for the cash rehearsal and the independent month reconciliation.
+
+**28 November 2026, booth voucher payroll.** Resume `lane/vouchers-20261128` at source `bc05e0215`. Generate and check the API contract on a hosted runner. Run the payroll and database checks before deploying to staging. The cash rehearsal requires two synthetic employees and an isolated booth and till. Verify the month against raw records and attach masked evidence on the ticket.
 
 **28 November 2026, resume the approved work order here.** Both PRs have merged. The tested recovery tree is on main at `57ea81a91`. All 80 local authentication checks passed. Both server comparisons and the four ticket state lines are recorded. G5 is open because GitHub still serves an earlier PR 15 revision containing staff identifiers. The owner was asked about a private request using repository references only. The clean main documents can be used now. Follow the [work order](CODEX_WORK_ORDER_2026-11-28.md) for B through F and all deployment gates. [Merge receipts and CI](../progress/STATUS.md)
 

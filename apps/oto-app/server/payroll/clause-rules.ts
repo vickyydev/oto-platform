@@ -23,6 +23,7 @@
  */
 import type { CompanyIncentive, CompanyIncentiveKind } from "./engine/company-model";
 import { bonusParts, type ClauseBonusTerms, type ClauseReading } from "@shared/payroll-clause-reading";
+import { isBoothFlyer } from "@shared/booth-bonus";
 
 export const CLAUSE_RULE_PREFIX = "Contract · ";
 export interface ClauseRuleContext {
@@ -80,6 +81,7 @@ export function rulesFromReading(reading: ClauseReading, ctx: ClauseRuleContext)
     if (part.type === "needs-a-person") problems.push(`Part ${index + 1} ("${part.quote}") needs a person: ${part.needsPersonWhy ?? "settle it first."}`);
   });
   for (const part of bonusParts(reading)) {
+    if (isBoothFlyer(part)) continue;
     const index = reading.parts.indexOf(part), b = part.bonus!;
     const where = `Part ${index + 1} ("${part.quote}")`;
     if (b.joinPool) {

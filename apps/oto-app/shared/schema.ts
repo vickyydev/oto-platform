@@ -5316,6 +5316,49 @@ export type PayrollIncentiveAssignmentRow = typeof payrollIncentiveAssignments.$
  * keeps paying until a person decides a new one. A newer decision marks the
  * older reading `replaced`; no reading is ever deleted.
  */
+export const payrollBoothRules = pgTable("payroll_booth_rules", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  from: date("effective_from").notNull(),
+  rateSatang: integer("rate_satang").notNull(),
+  window: text("redemption_window").notNull(),
+  reason: text("reason").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [
+  uniqueIndex("payroll_booth_rules_start").on(t.tenantId, t.from),
+  check("payroll_booth_rule_valid", sql`${t.rateSatang} >= 0 and ${t.window} in ('same-day','24-hours','7-days','30-days','any-time')`),
+]);
+
+export const payrollBoothPersonRates = pgTable("payroll_booth_person_rates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  employeeId: varchar("employee_id").notNull(),
+  from: date("effective_from").notNull(),
+  until: date("effective_until"),
+  rateSatang: integer("rate_satang"),
+  readingId: uuid("reading_id"),
+  reason: text("reason").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [
+  foreignKey({ name:"payroll_booth_rate_employee_fk", columns:[t.tenantId,t.employeeId], foreignColumns:[employees.tenantId,employees.id] }),
+  index("payroll_booth_rate_lookup").on(t.tenantId,t.employeeId,t.from,t.createdAt),
+  check("payroll_booth_rate_valid", sql`(${t.rateSatang} is null or ${t.rateSatang} >= 0) and (${t.until} is null or ${t.until} >= ${t.from})`),
+]);
+
+export const payrollBoothBonuses = pgTable("payroll_booth_bonuses", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  voucherId: uuid("voucher_id").notNull(), saleId: uuid("sale_id").notNull(), employeeId: varchar("employee_id").notNull(),
+  stationId: uuid("station_id").notNull(), branchId: varchar("branch_id").notNull(), month: text("redemption_month").notNull(),
+  issuedAt: timestamp("issued_at", { withTimezone: true }).notNull(), usedAt: timestamp("used_at", { withTimezone: true }).notNull(),
+  rateSatang: integer("rate_satang").notNull(), window: text("redemption_window").notNull(),
+}, t => [
+  uniqueIndex("payroll_booth_bonus_once").on(t.tenantId,t.voucherId,t.employeeId),
+  index("payroll_booth_bonus_month").on(t.tenantId,t.month),
+  foreignKey({ name:"payroll_booth_bonus_employee_fk", columns:[t.tenantId,t.employeeId], foreignColumns:[employees.tenantId,employees.id] }),
+  check("payroll_booth_bonus_valid", sql`${t.rateSatang} >= 0 and ${t.usedAt} >= ${t.issuedAt}`),
+]);
+
 export const payrollIncentiveClauseReadings = pgTable("payroll_incentive_clause_readings", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   tenantId: uuid("tenant_id").notNull().references(() => tenants.id),

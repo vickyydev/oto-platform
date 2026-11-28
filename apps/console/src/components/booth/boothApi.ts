@@ -688,6 +688,7 @@ export interface BoothDutyLogLine {
 }
 
 export interface BoothDutyView {
+  bonus?: {rateSatang:number;window:string;from:string} | null;
   businessDate: string;
   rule: BoothDutyRule;
   roster: BoothDutyAssignment[];

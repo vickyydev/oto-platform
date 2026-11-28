@@ -23,6 +23,7 @@
  * park's real clauses (tests/payroll/cases/clause-readings.cases.ts) runs it.
  */
 import { z } from "zod";
+import { flyerRuling, isBoothFlyer } from "./booth-bonus";
 
 export const NOT_BONUS_KINDS = ["service-charge", "salary-change", "benefit", "other"] as const;
 export type NotBonusKind = typeof NOT_BONUS_KINDS[number];
@@ -222,9 +223,16 @@ export function checkReading(clauseText: string, reading: ClauseReading, source:
     if (b.basis === "percent-of-revenue" && b.percent !== null && b.threshold !== null && b.percent * b.threshold / 100 < 1000) {
       ask(`At exactly ${baht(b.threshold)} baht, ${baht(b.percent)}% pays ${baht(Math.round(b.percent * b.threshold) / 100)} baht a month. Please confirm the rate really is ${baht(b.percent)}%.`);
     }
+    if (isBoothFlyer(part) && b.bahtPerUnit !== null) {
+      return {...part, plainWords:`Booth voucher bonus at ${baht(b.bahtPerUnit)} baht per used voucher, counted from the booth and till records. ${flyerRuling}`,
+        bonus:{...b,sharing:"own",team:null,split:null,joinPool:null,unit:{described:"redeemed booth voucher",inputKey:"booth-vouchers",counted:"per-person"}}};
+    }
     if (b.sharing === "team" && !b.joinPool && !b.team?.trim()) ask(`"${part.quote}" is shared by a team, but the clause does not name the team. Who shares it?`);
     return part;
   });
+  if (parts.length && parts.every(isBoothFlyer)) {
+    return {reading:{parts,summary:parts[0].plainWords,questions:[]},notes};
+  }
   return { reading: { summary: reading.summary, parts, questions }, notes };
 }
 

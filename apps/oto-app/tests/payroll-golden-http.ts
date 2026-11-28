@@ -30,6 +30,7 @@ import type { GoldenIds } from "../server/payroll/diagnostics/september-golden";
 import type { CompanyCalculation } from "../server/payroll/engine/company-model";
 import { caller, database, makeEmployee, makeGroup, serve, signIn, stopServers, APP_ENV } from "./payroll-harness";
 import { fictionalThaiId } from "../server/payroll/engine/upload-common";
+import { checkBoothDatabase } from "./payroll-booth-database";
 import type { CompanyOutputs, CompanyResult } from "../server/payroll/engine/company-model";
 import type { PayrollDownloadsView } from "../shared/payroll-month";
 
@@ -145,6 +146,7 @@ export async function runGoldenHttpLeg(options: { lifecycle?: boolean } = {}): P
     Object.assign(process.env, APP_ENV);
     const { loadPayrollWorld } = await import("../server/payroll/world");
     appPool = (await import("../server/db")).pool;
+    await checkBoothDatabase(q);
     const { generateCompanyOutputs } = await import("../server/payroll/engine/company-outputs");
     const loaded = await loadPayrollWorld(g.tenant, GOLDEN_MONTH);
     const outputs = generateCompanyOutputs(loaded.world, preview.calculation, entity.id);

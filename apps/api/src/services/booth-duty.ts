@@ -37,6 +37,7 @@ import { isBranchStaff } from './booth-admin';
 import { listAppEmployeesByIds, otoAppEmployeesInstalled } from './otoapp-employees';
 import { OtoAppSeamNotGrantedError } from './otoapp-events';
 import { withTx, type Exec, type OpContext } from './tx';
+import { currentBoothBonus } from './otoapp-booth-bonus';
 
 /**
  * The day's booth staff (SCRUM-473, plan decisions D4-D6 in
@@ -949,6 +950,7 @@ export interface BoothDutyLogLine {
 }
 
 export interface BoothDutyView {
+  bonus: {rateSatang:number;window:string;from:string} | null;
   businessDate: string;
   rule: BoothDutyRule;
   roster: BoothDutyAssignmentView[];
@@ -1006,6 +1008,7 @@ export async function boothDutyView(
   return {
     businessDate: date,
     rule,
+    bonus: await currentBoothBonus(db,row.branchId,date),
     roster: roster.map(viewOf),
     label: boothDutyLabel({
       roster: { date, people: roster.map((r) => ({ accountId: r.accountId, displayName: r.displayName })) },

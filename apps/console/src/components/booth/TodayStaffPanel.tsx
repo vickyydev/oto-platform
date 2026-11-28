@@ -1,4 +1,6 @@
 import { useWorkingAuthority } from '@/lib/workingAuthority';
+import { withHandoffTarget } from '@oto/shared/handoff-target';
+import { api, idemKey } from '@/api/client';
 import { useCallback, useEffect, useState } from 'react';
 import { RefreshCw, Ticket, TriangleAlert, UserPlus, Users, X } from 'lucide-react';
 import { staffCandidates, type BranchStaffMember } from '@/api/fleet';
@@ -171,6 +173,14 @@ export function TodayStaffPanel({
         !error && <Loading what="today’s staff" />
       ) : (
         <>
+          <div className="text-sm">Booth voucher bonus · {view.bonus
+            ? `${view.bonus.rateSatang/100} baht · ${view.bonus.window.replaceAll('-', ' ')} · from ${view.bonus.from}`
+            : "No current rule available"} · <button type="button" className="underline" onClick={async()=>{
+              try { const {launchUrl}=await api.post<{launchUrl:string}>('/auth/handoff',{app:'oto_app'},{idempotencyKey:idemKey()});
+                if(!launchUrl)throw new Error('No HR destination');
+                window.location.assign(withHandoffTarget(launchUrl,'/payroll/setup/rewards'));
+              } catch {setError('Payroll Setup could not be opened.');}
+            }}>Payroll Setup</button></div>
           {view.roster.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Nobody is assigned for today.{' '}

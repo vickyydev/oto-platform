@@ -58,6 +58,8 @@ import {
 import { draftProfiles, loadProfileView, loadRoster, saveProfile } from "./profiles";
 import { loadMonthInputsView, overrideMonthInput, saveBranchRevenue, saveStaffMonthInput } from "./inputs";
 import { loadRewardsView, saveIncentive, saveServicePolicy } from "./rewards";
+import { boothSettings, loadBoothReport, saveBoothRule } from "./booth-bonus";
+
 import { approveReading, clauseExample, correctReading, loadClauseReadings, markNotIncentive, readClause } from "./clause-readings";
 import { bookOtTimeOff, loadFeedsView, recordLeaveValuation, reverseLeaveValuation, saveOffboarding } from "./feeds";
 import { addManualLine, addOverride, confirmAllAttendance, loadMonthEnd, previewMonth, recordReview, removeManualLine, removeOverride, startRun } from "./month-end";
@@ -216,6 +218,12 @@ export function registerPayrollRoutes(app: Express, { requireAuth, callerParkGro
     saveStaffMonthInput(parkGroupOf(res), actorOf(req), req.params.month, req.params.employeeId, body(req))));
 
   // ── Rewards setup (R3) ──
+  app.get("/api/payroll/setup/rewards/booth", requireAuth, payroll("hr.view_salary"), fence, answer(200,(req,res)=>
+    boothSettings(parkGroupOf(res), canManagePayroll(subject(req)), asOfOf(req))));
+  app.post("/api/payroll/setup/rewards/booth", requireAuth, payroll("hr.manage_payroll"), fence, answer(201,(req,res)=>
+    saveBoothRule(parkGroupOf(res),actorOf(req),body(req))));
+  app.get("/api/payroll/booth-vouchers/:month", requireAuth, payroll("hr.view_salary"), fence, answer(200, (req,res) =>
+    loadBoothReport(parkGroupOf(res),req.params.month)));
   app.get("/api/payroll/setup/rewards", requireAuth, payroll("hr.view_salary"), fence, answer(200, async (req, res) =>
     ({ ...(await loadRewardsView(parkGroupOf(res))), canManage: canManagePayroll(subject(req)) })));
   app.post("/api/payroll/setup/rewards/service-policies/:branchId", requireAuth, payroll("hr.manage_payroll"), fence, answer(200, (req, res) =>
