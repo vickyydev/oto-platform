@@ -1,3 +1,7 @@
+## Resume — 28 November 2026, 19:47 Bangkok
+
+SCRUM-1082. The three API groups, HR and the till passed at `2696de697`. The remaining workspace failure is corrected by `42bd58e28`. All four affected tests passed and the three live database constraints match. Watch the next main run by full SHA, record Render’s ten served revisions, then open the four staging screens. The payroll candidate is deployed independently on staging, and the booth trial still needs the midnight boundary.
+
 ## Resume — 28 November 2026, 19:28 Bangkok
 
 Main checks, SCRUM-1082. The till and HR jobs completed successfully on `2696de697`. The workspace database test compared the old deposit migration with today's template list. Its narrow correction preserves both the original additions and the current database constraints. Staging read-only job `job-dc5cgj49v7es73a28rrg` matched all three. Follow the automatic main run through the remaining API shards and record the served staging revisions and four screens.

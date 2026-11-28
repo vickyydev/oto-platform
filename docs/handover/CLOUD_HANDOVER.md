@@ -33,6 +33,8 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
+28 November 2026, 19:47 Bangkok. SCRUM-1082. All API groups, HR and the till passed at `2696de697`. All four tests in the corrected database migration file passed. Staging’s schema matched independently, and no non-test till sales were active. The next main run and automatic staging readback are due.
+
 28 November 2026, 19:28 Bangkok. SCRUM-1082, Main: the automatic checks pass again (failing since 23 November). The migration test now checks its historical change and the full current constraint separately. All three current constraints were independently confirmed on staging. The till and HR jobs passed on `2696de697`. Staging October payroll matched to the satang, with voucher cash trials and the 22:30 live HR window still outstanding.
 
 **28 November 2026, staging release candidate.** [Main: the automatic checks pass again (failing since 23 November)](https://oto-suite-dev.atlassian.net/browse/SCRUM-1082) repairs the release checks and audits the hosted checkout writes. The green CI run and ten matching staging services are the remaining release evidence. Production HR follows its separate rehearsal and named-service deployment.
