@@ -315,10 +315,18 @@ export async function loadBoothReport(
         desc(payrollBoothPersonRates.createdAt),
         desc(payrollBoothPersonRates.id),
       );
+    const voucherIds = facts.map(({ fact }) => fact.voucherId);
+    if (!voucherIds.length) return report;
+    const voucherList = sql`select value::uuid from jsonb_array_elements_text(${JSON.stringify(voucherIds)}::jsonb)`;
     const saved = await tx
       .select()
       .from(payrollBoothBonuses)
-      .where(and(eq(payrollBoothBonuses.tenantId, tenantId), eq(payrollBoothBonuses.month, month)));
+      .where(
+        and(
+          eq(payrollBoothBonuses.tenantId, tenantId),
+          sql`${payrollBoothBonuses.voucherId} in (${voucherList})`,
+        ),
+      );
     const held = new Map(saved.map((s) => [s.voucherId + '|' + s.employeeId, s]));
     const frozenStaff = new Map<string, string[]>();
     for (const entry of saved) {
@@ -329,48 +337,45 @@ export async function loadBoothReport(
     const candidates: (typeof payrollBoothBonuses.$inferInsert)[] = [];
     const byPerson = new Map<string, BoothReportRow>(),
       byBooth = new Map<string, BoothReportRow>();
-    const reversed = facts.filter(({ fact: f }) => f.reversedAt && f.saleId && f.usedDay);
-    if (reversed.length) {
-      // Read only voucher identifiers actually frozen into a paid run for this employee/entity.
-      const paid = await tx.execute(sql`
-        select distinct a->>'voucherId' as voucher_id, s.locked_at
-        from payroll_run_snapshots s
-        join payroll_run_versions ver on ver.id=s.run_version_id and ver.tenant_id=s.tenant_id and ver.status='paid'
-        join payroll_run_lines l on l.snapshot_id=s.id and l.tenant_id=s.tenant_id and l.component='incentive:booth-voucher'
-        cross join lateral jsonb_array_elements(coalesce(s.world->'doc'->'boothAwards','[]'::jsonb)) a
-        where s.tenant_id=${tenantId} and a->>'employeeId'=l.employee_id
-          and a->>'voucherId' in (${sql.join(
-            reversed.map(({ fact }) => sql`${fact.voucherId}`),
-            sql`, `,
-          )})`);
-      for (const { fact: f } of reversed) {
-        const localParts = new Intl.DateTimeFormat('en-CA', {
-          timeZone: f.timezone,
+    // A re-issued voucher can move to another sale before lock. A frozen run already owns its payment.
+    const locked = await tx.execute(sql`
+      select distinct a->>'voucherId' as voucher_id, a->>'saleId' as sale_id, l.employee_id, ver.paid_at
+      from payroll_run_snapshots s
+      join payroll_run_versions ver on ver.id=s.run_version_id and ver.tenant_id=s.tenant_id and ver.status in ('locked','paid')
+      join payroll_run_lines l on l.snapshot_id=s.id and l.tenant_id=s.tenant_id and l.component='incentive:booth-voucher'
+      cross join lateral jsonb_array_elements(coalesce(s.world->'doc'->'boothAwards','[]'::jsonb)) a
+      where s.tenant_id=${tenantId} and a->>'employeeId'=l.employee_id and (a->>'voucherId')::uuid in (${voucherList})`);
+    for (const { fact } of facts)
+      for (const reversal of fact.reversals) {
+        const localDay = new Intl.DateTimeFormat('en-CA', {
+          timeZone: fact.timezone,
           year: 'numeric',
           month: '2-digit',
           day: '2-digit',
-        }).format(new Date(f.reversedAt!));
-        const nextAfterUse = new Date(
-          Date.UTC(Number(f.usedDay!.slice(0, 4)), Number(f.usedDay!.slice(5, 7)), 1),
+        }).format(new Date(reversal.at));
+        const nextMonth = new Date(
+          Date.UTC(Number(reversal.usedDay.slice(0, 4)), Number(reversal.usedDay.slice(5, 7)), 1),
         )
           .toISOString()
           .slice(0, 7);
-        const reportMonth = [nextAfterUse, localParts.slice(0, 7)].sort().at(-1);
+        const due = [nextMonth, localDay.slice(0, 7)].sort().at(-1);
         if (
-          month === reportMonth &&
-          paid.rows.some(
-            (r) =>
-              r.voucher_id === f.voucherId &&
-              new Date(String(r.locked_at)).getTime() < Date.parse(f.reversedAt!),
+          month === due &&
+          locked.rows.some(
+            (row) =>
+              row.voucher_id === fact.voucherId &&
+              row.sale_id === reversal.saleId &&
+              row.paid_at &&
+              new Date(String(row.paid_at)).getTime() < Date.parse(reversal.at),
           )
-        )
+        ) {
           report.flags.push({
-            voucherId: f.voucherId,
-            booth: f.booth,
+            voucherId: fact.voucherId,
+            booth: fact.booth,
             reason: 'Refunded after pay — manager review',
           });
+        }
       }
-    }
     const countedSales = new Set<string>();
     for (const { branchId, fact: f } of facts) {
       const policy = rules.find((r) => r.from <= f.issuedDay);
@@ -406,13 +411,14 @@ export async function loadBoothReport(
       );
       for (const id of frozenStaff.get(f.voucherId) ?? matched.ids) {
         const frozen = held.get(f.voucherId + '|' + id);
-        if (frozen && frozen.saleId !== f.saleId) {
-          flag('Sale link changed after the voucher was counted');
-          continue;
-        }
+        const otherRun = locked.rows.some(
+          (row) =>
+            row.voucher_id === f.voucherId && row.employee_id === id && row.sale_id !== f.saleId,
+        );
         const window = (frozen?.window ?? policy.window) as BonusWindow;
         update(rowFor(byPerson, id, staff.get(id)?.name ?? 'Unknown employee'), window);
         if (
+          otherRun ||
           !liveSale ||
           !f.usedAt ||
           !f.usedDay?.startsWith(month) ||
@@ -425,7 +431,12 @@ export async function loadBoothReport(
           frozen?.rateSatang ??
           (own && (!own.until || own.until >= f.issuedDay) ? own.rateSatang : null) ??
           policy.rateSatang;
-        if (!frozen)
+        if (frozen && frozen.saleId !== f.saleId) {
+          await tx
+            .update(payrollBoothBonuses)
+            .set({ saleId: f.saleId, usedAt: new Date(f.usedAt), month })
+            .where(eq(payrollBoothBonuses.id, frozen.id));
+        } else if (!frozen)
           candidates.push({
             tenantId,
             voucherId: f.voucherId,

@@ -230,6 +230,9 @@ export function checkReading(clauseText: string, reading: ClauseReading, source:
     if (b.sharing === "team" && !b.joinPool && !b.team?.trim()) ask(`"${part.quote}" is shared by a team, but the clause does not name the team. Who shares it?`);
     return part;
   });
+  if (parts.length && parts.every(isBoothFlyer)) {
+    return {reading:{parts,summary:parts[0].plainWords,questions:[]},notes};
+  }
   return { reading: { summary: reading.summary, parts, questions }, notes };
 }
 

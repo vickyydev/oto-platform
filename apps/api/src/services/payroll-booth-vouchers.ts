@@ -25,6 +25,7 @@ export const PayrollBoothRecord = z.object({
   saleState: z.string().nullable(),
   spendSatang: z.number().int().nonnegative(),
   reversedAt: z.string().nullable(),
+  reversals: z.array(z.object({ saleId: z.string().uuid(), usedDay: z.string(), at: z.string() })),
   sharedCode: z.boolean(),
   accountIds: z.array(z.string().uuid()),
   employeeIds: z.array(z.string()).nullable(),
@@ -84,8 +85,8 @@ export async function payrollBoothVouchers(
       v.issued_at as "issuedAt", to_char(v.issued_at at time zone b.timezone, 'YYYY-MM-DD') as "issuedDay",
       to_char(v.issued_at at time zone b.timezone, 'YYYY-MM') as "issuedMonth",
       use.occurred_at as "usedAt", to_char(use.occurred_at at time zone b.timezone, 'YYYY-MM-DD') as "usedDay",
-      sale.id as "saleId", sale.status as "saleState", coalesce(sale.gross_satang,0)::float8 as "spendSatang",
-      least(ref.at, sale.voided_at, sale.refunded_at) as "reversedAt", vd.code_mode = 'fixed' as "sharedCode",
+      use.sale_id as "saleId", use.status as "saleState", coalesce(use.gross_satang,0)::float8 as "spendSatang",
+      use.reversed_at as "reversedAt", vd.code_mode = 'fixed' as "sharedCode", coalesce(use.reversals,'[]'::jsonb) as reversals,
       coalesce(a.snapshot->'dutyAccountIds', ev.payload->'dutyAccountIds',
         case when s.staff_account_id is not null then jsonb_build_array(s.staff_account_id) else '[]'::jsonb end) as "accountIds",
       a.snapshot->'dutyEmployeeIds' as "employeeIds",
@@ -101,18 +102,27 @@ export async function payrollBoothVouchers(
     left join lateral (select l.after as snapshot from core.audit_log l
       where l.operator_id = v.operator_id and l.entity_type = 'spin' and l.entity_id = s.id::text
         and l.action = 'spin.record' order by l.created_at, l.id limit 1) a on true
-    left join lateral (select r.sale_id,r.occurred_at from promo.voucher_redemption r
-      where r.voucher_id=v.id and r.operator_id=v.operator_id and r.kind='consumed'
-      order by r.occurred_at, r.id limit 1) use on true
-    left join pos.sale sale on sale.id=use.sale_id and sale.operator_id=v.operator_id
-    left join lateral (select min(r.created_at) as at from pos.refund r
-      where r.sale_id = sale.id and r.operator_id = v.operator_id) ref on true
+    left join lateral (
+      with consumed as (
+        select r.sale_id, r.occurred_at, x.status, x.gross_satang,
+          least(x.voided_at,x.refunded_at,(select min(rr.created_at) from pos.refund rr
+            where rr.operator_id=v.operator_id and rr.sale_id=x.id)) as reversed_at
+        from promo.voucher_redemption r
+        join pos.sale x on x.id=r.sale_id and x.operator_id=r.operator_id
+        where r.voucher_id=v.id and r.operator_id=v.operator_id and r.kind='consumed'
+      )
+      select c.*, (select coalesce(jsonb_agg(jsonb_build_object('saleId',sale_id,'usedDay',
+        to_char(occurred_at at time zone b.timezone,'YYYY-MM-DD'),'at',reversed_at)), '[]'::jsonb)
+        from consumed where reversed_at is not null) as reversals,
+        exists (select 1 from consumed where ${query.month} in (to_char(occurred_at at time zone b.timezone,'YYYY-MM'),
+          to_char(reversed_at at time zone b.timezone,'YYYY-MM'),
+          to_char((reversed_at at time zone b.timezone)+interval '1 month','YYYY-MM'))) as relevant
+      from consumed c order by (c.reversed_at is null and c.status in ('paid','finalised')) desc,
+        c.occurred_at, c.sale_id limit 1
+    ) use on true
     where v.operator_id=${operatorId} and v.branch_id=${park.id} and v.source='booth' and v.print_count>0
       ${query.after ? sql`and v.id > ${query.after}::uuid` : sql``}
-      and (${query.month} in (to_char(v.issued_at at time zone b.timezone, 'YYYY-MM'),
-        to_char(use.occurred_at at time zone b.timezone, 'YYYY-MM'),
-        to_char(least(ref.at, sale.voided_at, sale.refunded_at) at time zone b.timezone, 'YYYY-MM'),
-        to_char((least(ref.at, sale.voided_at, sale.refunded_at) at time zone b.timezone) + interval '1 month', 'YYYY-MM')))
+      and (to_char(v.issued_at at time zone b.timezone, 'YYYY-MM')=${query.month} or use.relevant)
     order by v.id limit ${pageSize + 1}`);
   const instant = (value: unknown) =>
     value == null ? null : (value instanceof Date ? value : new Date(String(value))).toISOString();

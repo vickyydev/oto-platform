@@ -69,77 +69,67 @@ beforeAll(async () => {
   env.OTOAPP_PROVISION_KEYS = operatorId + ':' + otoAppProvisionKeyDigest(key);
   await ctx.restart();
   const boxId = newId();
-  await ctx.db
-    .insert(box)
-    .values({
-      id: boxId,
-      operatorId,
-      branchId,
-      name: 'ZZ TEST payroll review',
-      slot: 'payroll-review',
-      role: 'booth',
-      status: 'unclaimed',
-    });
+  await ctx.db.insert(box).values({
+    id: boxId,
+    operatorId,
+    branchId,
+    name: 'ZZ TEST payroll review',
+    slot: 'payroll-review',
+    role: 'booth',
+    status: 'unclaimed',
+  });
   for (const id of [printed, failedPrint]) {
-    await ctx.db
-      .insert(voucher)
-      .values({
-        id,
-        operatorId,
-        branchId,
-        voucherDefinitionId: source.voucherDefinitionId!,
-        source: 'booth',
-        code: randomUUID(),
-        printCount: id === printed ? 2 : 0,
-        issuedAt,
-      });
-    await ctx.db
-      .insert(spin)
-      .values({
-        id: newId(),
-        operatorId,
-        branchId,
-        stationId,
-        boxId,
-        boothConfigVersionId: version.id,
-        prizeId: source.id,
-        voucherId: id,
-        occurredAt: issuedAt,
-        businessDate: '2026-11-28',
-      });
-  }
-  await ctx.db
-    .insert(sale)
-    .values({
-      id: saleId,
+    await ctx.db.insert(voucher).values({
+      id,
       operatorId,
       branchId,
-      stationId,
-      businessDate: '2026-11-29',
-      businessDayStart: '05:00',
-      timezone: 'Asia/Bangkok',
-      occurredAt: usedAt,
-      createdByAccountId: actor!.id,
-      pricingMode: 'weekday',
-      pricingModeReason: 'ZZ TEST',
-      customerTier: 'tourist',
-      engineVersion: 'test',
-      taxConfig: {},
-      taxBreakdown: {},
-      status: 'paid',
+      voucherDefinitionId: source.voucherDefinitionId!,
+      source: 'booth',
+      code: randomUUID().replaceAll('-', '').toUpperCase(),
+      printCount: id === printed ? 2 : 0,
+      issuedAt,
     });
-  await ctx.db
-    .insert(voucherRedemption)
-    .values({
+    await ctx.db.insert(spin).values({
       id: newId(),
       operatorId,
-      voucherId: printed,
-      kind: 'consumed',
-      saleId,
       branchId,
       stationId,
-      occurredAt: usedAt,
+      boxId,
+      boothConfigVersionId: version.id,
+      prizeId: source.id,
+      voucherId: id,
+      occurredAt: issuedAt,
+      businessDate: '2026-11-28',
     });
+  }
+  await ctx.db.insert(sale).values({
+    id: saleId,
+    operatorId,
+    branchId,
+    stationId,
+    businessDate: '2026-11-29',
+    businessDayStart: '05:00',
+    timezone: 'Asia/Bangkok',
+    occurredAt: usedAt,
+    createdByAccountId: actor!.id,
+    pricingMode: 'weekday',
+    pricingModeReason: 'ZZ TEST',
+    customerTier: 'tourist',
+    engineVersion: 'test',
+    taxConfig: {},
+    taxBreakdown: {},
+    status: 'paid',
+  });
+  await ctx.db.insert(voucherRedemption).values({
+    id: newId(),
+    operatorId,
+    voucherId: printed,
+    kind: 'consumed',
+    saleId,
+    branchId,
+    stationId,
+    occurredAt: usedAt,
+  });
 }, 120000);
 afterAll(async () => {
   await ctx?.close();
@@ -196,5 +186,35 @@ describe('SCRUM-1076 — published booth and till records for payroll', () => {
       saleId,
       reversedAt: when.toISOString(),
     });
+    const [original] = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
+    const liveId = newId(),
+      nextUse = new Date(when.getTime() + 60000);
+    await ctx.db
+      .insert(sale)
+      .values({
+        ...original!,
+        id: liveId,
+        status: 'paid',
+        occurredAt: nextUse,
+        businessDate: '2026-12-02',
+        voidedAt: null,
+        voidReason: null,
+      });
+    const [usage] = await ctx.db
+      .select()
+      .from(voucherRedemption)
+      .where(eq(voucherRedemption.saleId, saleId));
+    await ctx.db
+      .insert(voucherRedemption)
+      .values({ ...usage!, id: newId(), kind: 'consumed', saleId: liveId, occurredAt: nextUse });
+    const reused = await payrollBoothVouchers(ctx.db, operatorId, { branchId, month: '2026-12' });
+    const fact = reused.records.find((row) => row.voucherId === printed);
+    expect(fact).toMatchObject({
+      saleId: liveId,
+      saleState: 'paid',
+      reversedAt: null,
+      usedAt: nextUse.toISOString(),
+    });
+    expect(fact!.reversals.map((r) => r.saleId)).toEqual([saleId]);
   });
 });

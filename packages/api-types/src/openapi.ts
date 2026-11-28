@@ -8686,6 +8686,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/otoapp/payroll/booth-vouchers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Printed booth vouchers and their first till redemption for a payroll month at a park belonging to the provisioning key. */
+        get: {
+            parameters: {
+                query: {
+                    branchId: string;
+                    month: string;
+                    after?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            records: {
+                                /** Format: uuid */
+                                voucherId: string;
+                                /** Format: uuid */
+                                stationId: string;
+                                booth: string;
+                                timezone: string;
+                                issuedAt: string;
+                                issuedDay: string;
+                                issuedMonth: string;
+                                usedAt: string | null;
+                                usedDay: string | null;
+                                /** Format: uuid */
+                                saleId: string | null;
+                                saleState: string | null;
+                                spendSatang: number;
+                                reversedAt: string | null;
+                                reversals: {
+                                    /** Format: uuid */
+                                    saleId: string;
+                                    usedDay: string;
+                                    at: string;
+                                }[];
+                                sharedCode: boolean;
+                                accountIds: string[];
+                                employeeIds: string[] | null;
+                                staffLabel: string | null;
+                            }[];
+                            /** Format: uuid */
+                            next: string | null;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/otoapp/parties/{eventId}/deposit-request": {
         parameters: {
             query?: never;
@@ -17396,6 +17467,11 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
+                            bonus: {
+                                rateSatang: number;
+                                window: string;
+                                from: string;
+                            } | null;
                             businessDate: string;
                             rule: {
                                 groupText: string;

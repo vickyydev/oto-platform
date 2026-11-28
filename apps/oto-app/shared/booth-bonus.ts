@@ -37,6 +37,13 @@ export const boothPageSchema = z.object({
       saleState: z.string().nullable(),
       spendSatang: z.number().int().nonnegative(),
       reversedAt: z.string().datetime().nullable(),
+      reversals: z.array(
+        z.object({
+          saleId: z.string().uuid(),
+          usedDay: z.string().date(),
+          at: z.string().datetime({ offset: true }),
+        }),
+      ),
       sharedCode: z.boolean(),
       accountIds: z.array(z.string().uuid()),
       employeeIds: z.array(z.string()).nullable(),

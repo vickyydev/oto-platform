@@ -23,6 +23,7 @@ const issue: BoothRecord = {
   saleState: 'finalised',
   spendSatang: 0,
   reversedAt: null,
+  reversals: [],
   sharedCode: false,
   accountIds: ['a'],
   employeeIds: null,
