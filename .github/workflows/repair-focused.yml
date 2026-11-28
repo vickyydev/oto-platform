@@ -5,19 +5,6 @@ on:
 permissions:
   contents: read
 jobs:
-  api-types:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --filter '@oto/api...' --filter '@oto/pos...' --filter oto-platform --frozen-lockfile
-      - run: pnpm --filter @oto/api exec tsc -p tsconfig.json --noEmit --pretty false
-        env:
-          NODE_OPTIONS: --max-old-space-size=4096
   birthday-forms:
     runs-on: ubuntu-24.04
     defaults:
@@ -49,7 +36,7 @@ jobs:
           process.env.DATABASE_URL = database.toString();
           const migrate=spawnSync('npm',['run','db:migrate'],{encoding:'utf8'});
           if(migrate.status!==0){console.error('Synthetic database migration failed.');process.exit(1);}
-          const suites=['beo-catalogue-fill','beo-fill-phase-b','beo-fill-corrections','beo-fill-till-menu','beo-fill-followups','beo-fill-read-shapes','beo-fill-questions','beo-fill-guests-socks','beo-left-978','beo-paid-lines','ai-approve-deposit'];
+          const suites=['kitchen-adults','till-kitchen-edit','kitchen-plan-view','beo-guests-socks-db','beo-timeline','beo-activities-times','beo-activity-people-db','beo-extra-price','party-menu-item','till-menu','beo-four-sections-ui','beo-additional-bill-ui','birthday-packages','deposit-save'];
           for(const suite of suites){
             const run=spawnSync('node',['--import','tsx','tests/'+suite+'.check.ts'],{encoding:'utf8',maxBuffer:16*1024*1024});
             console.log(suite,run.status===0?'passed':'failed');

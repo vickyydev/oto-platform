@@ -1,3 +1,5 @@
+**28 November 2026, downstream party checks.** A separate read-only hosted run exercises the other kitchen, till-menu, deposit and BEO cases that consume the same paid-item checks. The source still matches `6334ebdaf`. The previous run independently covers the API compiler and eleven party-form suites.
+
 **28 November 2026, focused check of the shared test till.** This runner now contains all product source changes in `6334ebdaf`. It reruns the eleven form checks and the API compiler. The previous run identified two direct-save scenarios that correctly needed the till’s paid-item information.
 
 **28 November 2026, hosted compiler setup corrected.** The API tests import the till’s browser harness. The isolated compiler job omitted its Playwright and Vite packages. Its rerun installs both workspaces from the lockfile. The source revision remains `948df48fe`.

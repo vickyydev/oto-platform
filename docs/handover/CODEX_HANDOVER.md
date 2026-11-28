@@ -1,3 +1,5 @@
+**28 November 2026, downstream diagnosis.** Inspect this runner for other kitchen or party tests that lack a synthetic billing record. Keep the public release proof tied to main’s full workflow.
+
 **28 November 2026, birthday-form rerun.** Read both jobs on this verification branch and reconcile any failures against the real release branch. The synthetic till serves only its fixture event IDs.
 
 **28 November 2026, verification runner correction.** Read the focused compiler after both API and till dependencies are installed. The first runner emitted unresolved till test imports. This correction affects only the disposable branch.
