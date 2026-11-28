@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, expect, it, vi } from 'vitest';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { auditLog, branch, paymentAttempt } from '@oto/db';
 import { SimulatorQrPayment } from '@oto/payments-2c2p';
 import { hostedChoicePage, selectHostedMethod } from '../src/services/payments/hosted-choice';
@@ -24,9 +24,14 @@ it('a deposit link opens one bank checkout on its original branch and keeps the 
       description: 'ZZ TEST deposit', frontendReturnUrl: 'https://booking.invalid/return' } },
   });
   const gateway = new SimulatorQrPayment();
-  const open = vi.spyOn(gateway, 'createHostedPayment').mockResolvedValue({
-    webPaymentUrl: 'https://bank.invalid/checkout', expiresAt: new Date(Date.now() + 60000),
-    state: 'pending', respCode: '0000', respDesc: null,
+  const open = vi.spyOn(gateway, 'createHostedPayment').mockImplementation(async () => {
+    await ctx.db.update(paymentAttempt).set({
+      payload: sql`${paymentAttempt.payload} || jsonb_build_object('callbackSeen', true)`,
+    }).where(eq(paymentAttempt.id, id));
+    return {
+      webPaymentUrl: 'https://bank.invalid/checkout', expiresAt: new Date(Date.now() + 60000),
+      state: 'pending', respCode: '0000', respDesc: null,
+    };
   });
   await expect(hostedChoicePage(ctx.db, id, randomUUID())).rejects.toThrow();
   expect((await hostedChoicePage(ctx.db, id, key)).amount).toBe(100);
@@ -38,7 +43,7 @@ it('a deposit link opens one bank checkout on its original branch and keeps the 
   expect(open.mock.calls[0]?.[0]).toMatchObject({ invoiceNo, childMerchantId: 'CARDS', paymentChannels: ['CC'] });
   await expect(selectHostedMethod(ctx.db, gateway, id, key, 'qr')).rejects.toThrow();
   const [saved] = await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.id, id));
-  expect(saved).toMatchObject({ status: 'sent_to_terminal', method: 'card', payload: { childMerchantId: 'CARDS' } });
+  expect(saved).toMatchObject({ status: 'sent_to_terminal', method: 'card', payload: { childMerchantId: 'CARDS', callbackSeen: true } });
   const events = await ctx.db.select({ action: auditLog.action, after: auditLog.after }).from(auditLog)
     .where(eq(auditLog.entityId, id));
   expect(events.sort((a, b) => a.action.localeCompare(b.action))).toEqual([

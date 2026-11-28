@@ -1,4 +1,4 @@
-import { and, eq, gt } from 'drizzle-orm';
+import { and, eq, gt, sql } from 'drizzle-orm';
 import { paymentAttempt, type Db } from '@oto/db';
 import { WEB_INVOICE_STATION_CODE } from '@oto/shared';
 import type { QrPayment } from '@oto/payments-2c2p';
@@ -49,7 +49,7 @@ export async function selectHostedMethod(db: Db, qr: QrPayment, id: string, key:
     const scope = { operatorId: row!.operatorId, branchId: row!.branchId };
     await audit.record(tx, { ...scope, actorAccountId: null, requestId: context.requestId, action: 'payment.hosted_method_selected',
       entityType: 'payment_attempt', entityId: id, after: { method } });
-    return { scope, routed, request: {
+    return { scope, request: {
       attemptId: id, invoiceNo, amountSatang: row!.amountSatang, childMerchantId,
       description: choice.description, frontendReturnUrl: choice.frontendReturnUrl,
       locale: choice.locale, paymentChannels: [method === 'card' ? 'CC' : choice.qrChannel],
@@ -64,7 +64,8 @@ export async function selectHostedMethod(db: Db, qr: QrPayment, id: string, key:
   }
   await withTx(db, context, 'payment.hosted_link_ready', async tx => {
     const [saved] = await tx.update(paymentAttempt).set({
-      payload: { ...claimed.routed, bankPaymentUrl: opened.webPaymentUrl, respCode: opened.respCode },
+      // A callback can add facts while the bank is opening its page. Merge into the current row.
+      payload: sql`${paymentAttempt.payload} || ${JSON.stringify({ bankPaymentUrl: opened.webPaymentUrl, respCode: opened.respCode })}::jsonb`,
     }).where(and(eq(paymentAttempt.id, id), eq(paymentAttempt.status, 'sent_to_terminal'),
       gt(paymentAttempt.expiresAt, new Date()))).returning({ id: paymentAttempt.id });
     if (!saved) throw errors.notFound('Payment link');
