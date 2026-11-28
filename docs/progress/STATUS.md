@@ -1,3 +1,5 @@
+**28 November 2026, proxy response compiler check.** The API compiler found one test assuming a JSON response already had an error property. The check now verifies the complete refusal object. Its four local proxy tests passed. This runner checks the compiler with all required API and till test dependencies at product source `2b29d2471`.
+
 **28 November 2026, downstream party checks.** A separate read-only hosted run exercises the other kitchen, till-menu, deposit and BEO cases that consume the same paid-item checks. The source still matches `6334ebdaf`. The previous run independently covers the API compiler and eleven party-form suites.
 
 **28 November 2026, focused check of the shared test till.** This runner now contains all product source changes in `6334ebdaf`. It reruns the eleven form checks and the API compiler. The previous run identified two direct-save scenarios that correctly needed the till’s paid-item information.
