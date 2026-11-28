@@ -121,6 +121,11 @@ const MACHINE_CALLERS: Array<{ prefix: string; exact?: boolean; except?: string;
       "the OTO App outbox pump (server/lib/platformLifecycle.ts, SCRUM-769), posting a restrict event's ID the same way when a leaver's login goes to pay only",
   },
   {
+    prefix: '/otoapp/payroll/booth-vouchers',
+    exact: true,
+    caller: "the HR payroll reader (apps/oto-app/server/payroll/booth-bonus.ts, SCRUM-1076) reads paid voucher records using the operator's provision credential",
+  },
+  {
     prefix: '/otoapp/party-menu/products',
     exact: true,
     caller:

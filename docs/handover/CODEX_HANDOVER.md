@@ -1,3 +1,7 @@
+## Resume — 28 November 2026, 21:38 Bangkok
+
+SCRUM-1076. Three old HR-view inventories now recognize the scoped default-booth-rule view, the server caller is recorded, and the Console button uses the checked settings handoff. All 94 executed targeted checks passed, with 24 existing skips. Watch the exact new main run and confirm the named Console handoff on staging. The copied October and first-day November payroll results remain valid. The 22:30 named live HR deploy and genuine midnight voucher boundary are still outstanding.
+
 ## Resume — 28 November 2026, 20:42 Bangkok
 
 SCRUM-1075 reached main with the staged and independently checked October payroll changes. The ticket remains Deployed, with five pictures. HR must supply the two missing payroll profiles before those readings can be approved. Birthday hosts still enter their own counts. The remaining work is the named live HR release at 22:30 Bangkok and the separate SCRUM-1076 midnight boundary.

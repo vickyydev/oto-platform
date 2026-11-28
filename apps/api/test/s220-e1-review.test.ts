@@ -245,12 +245,17 @@ function sourceFiles(dir: string): string[] {
 }
 
 describe('H1, read again from the source', () => {
-  it('only the read-only repository names otoapp_v; the E1 service and route name no view and no app table', () => {
+  it('only declared read repositories name otoapp_v, and the E1 service and route use no app table', () => {
     const naming = sourceFiles(SRC)
       .filter((f) => readFileSync(f, 'utf8').includes('otoapp_v'))
       .map((f) => relative(SRC, f).split('\\').join('/'));
     // Exact app-owned read repositories; each retains its own relation allowlist.
-    expect(naming.sort()).toEqual(['services/otoapp-departments.ts', 'services/otoapp-employees.ts', 'services/otoapp-events.ts']);
+    expect(naming.sort()).toEqual([
+      'services/otoapp-booth-bonus.ts',
+      'services/otoapp-departments.ts',
+      'services/otoapp-employees.ts',
+      'services/otoapp-events.ts',
+    ]);
     for (const rel of ['services/events.ts', 'routes/events.ts']) {
       const src = readFileSync(join(SRC, rel), 'utf8');
       expect(src, rel).not.toMatch(/otoapp_v|otoapp\./);

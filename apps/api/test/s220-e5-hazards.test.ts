@@ -38,7 +38,7 @@ const POS_SRC = fileURLToPath(new URL('../../pos/src', import.meta.url));
 const REGISTER: Record<string, Array<[string, string]>> = {
   H1: [
     ['otoapp-events-seam.test.ts', 'no file in src names an OTO App event table'],
-    ['s220-e1-review.test.ts', 'only the read-only repository names otoapp_v'],
+    ['s220-e1-review.test.ts', 'only declared read repositories name otoapp_v'],
   ],
   H2: [
     ['events-e2.test.ts', 'check 2 — no tender, no child (H2)'],
