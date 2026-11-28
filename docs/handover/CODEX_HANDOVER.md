@@ -1,3 +1,5 @@
+**28 November 2026, focused verification branch.** Use the compiler and birthday-form jobs on `verify/repair-focused-20261128` to diagnose the release candidate. Only the product commits on the repair branch are intended for main.
+
 **28 November 2026, release repair ready for hosted verification.** Inspect the full commit SHA on [the main repair](https://github.com/vickyydev/oto-platform/pull/16). The local focused checks passed. Confirm the hosted API typecheck and the full main suite, then read back each staging deploy and open the four requested screens. The staging sign-in fixtures have already been removed.
 
 **28 November 2026, automatic checks in progress.** Inspect the second candidate on [the repair pull request](https://github.com/vickyydev/oto-platform/pull/16), including all three API groups, the till, and the HR app. Confirm a green main run and read back all ten staging revisions before closing the repair. The live HR rehearsal is separate.
