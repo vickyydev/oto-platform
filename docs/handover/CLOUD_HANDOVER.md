@@ -33,6 +33,8 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
+**28 November 2026, live HR release rehearsal complete.** Both builds opened the required HR screens against the migrated production copy. The live release and its protected checks remain open under SCRUM-1083, Live HR app: the BEO fixes of 23 November and the payroll fixes reach production. [Release record](../progress/plans/go-live/HR_RELEASE_2026-11-28.md)
+
 **28 November 2026, work-order merges recorded.** PR 15 landed at `fb61b518f` and PR 14 at `57ea81a91`. The recovery ticket holds the file comparison and masked staging evidence. The open G5 decision concerns GitHub’s historical copy of the earlier handover. [Current status](../progress/STATUS.md)
 
 **28 November 2026, administrator recovery.** The PR 14 source matches the live recovery route on both APIs. Eight local authentication suites passed. The phone input on the earlier staging evidence card is masked. PR 15 was merged with its staff details removed from main. G5 remains open for the earlier copy held by GitHub. [Release record](../progress/STATUS.md)
