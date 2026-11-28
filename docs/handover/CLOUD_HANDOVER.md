@@ -33,6 +33,8 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
+**28 November 2026, work-order merges recorded.** PR 15 landed at `fb61b518f` and PR 14 at `57ea81a91`. The recovery ticket holds the file comparison and masked staging evidence. The open G5 decision concerns GitHub’s historical copy of the earlier handover. [Current status](../progress/STATUS.md)
+
 **28 November 2026, administrator recovery.** The PR 14 source matches the live recovery route on both APIs. Eight local authentication suites passed. The phone input on the earlier staging evidence card is masked. PR 15 was merged with its staff details removed from main. G5 remains open for the earlier copy held by GitHub. [Release record](../progress/STATUS.md)
 
 **25 November 2026, SCRUM-1067.** An active administrator can now recover access through their unique registered launcher phone before its first verification. The reset verifies the number only after a valid code. The deployed staging API passed both focused recovery tests with simulated SMS in a disposable database (job `job-dc37rtgu01pc73dr7c5g`). Staging release `a35440b2a5ee7a6c5898ed3825ca2f3b5823434c` and production release `5b9bf5b9a3d0a8bac2e1ca25e1b7fa7a105fc123` each build on that environment's previous live API. Production deployment `dep-dc37sre8bjmc73esq2d0` went live at 13:25 Bangkok. The launcher reset route answered through the real domain. The account holder will request the SMS privately. The mainline change is on `lane/admin-registered-phone-recovery` pending merge. [Staging evidence](../qa/jira-comments/attachments/SCRUM-1067/staging-administrator-recovery.png).
