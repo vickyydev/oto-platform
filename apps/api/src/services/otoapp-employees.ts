@@ -61,6 +61,21 @@ export interface AppEmployee {
 
 const VIEW = 'otoapp_v.employees';
 
+export async function boothEmployeeLinks(exec: Exec, accountIds: readonly string[]) {
+  if (!accountIds.length) return [];
+  try {
+    if (!(await otoAppEmployeesInstalled(exec))) return [];
+  } catch (error) {
+    if (error instanceof OtoAppSeamNotGrantedError) return [];
+    throw error;
+  }
+  const keys = sql.join(accountIds.map(id => sql`${id}::uuid`), sql`, `);
+  const result = await exec.execute<{accountId:string; employeeId:string; branchId:string}>(sql`
+    select platform_user_id as "accountId", id as "employeeId", branch_id as "branchId"
+    from otoapp_v.employees where platform_user_id in (${keys}) and branch_id is not null`);
+  return result.rows;
+}
+
 /**
  * Is the employee seam on this database, and may this role read it? Asked
  * through catalog functions only, so the check itself never raises (see

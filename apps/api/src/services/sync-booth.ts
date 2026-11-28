@@ -21,6 +21,7 @@ import { normaliseStaffLabel } from './booth-attribution';
 import { boothBusinessDate, boothDutyRosterForBox } from './booth-duty';
 import { raiseAlert } from './ops';
 import type { Tx } from './tx';
+import { boothPayrollEmployees } from './payroll-booth-vouchers';
 import type { EventHandler, PreparedEvent } from './sync';
 
 /**
@@ -492,6 +493,7 @@ export const BOOTH_HANDLERS: Record<string, EventHandler> = {
           staffAccountId,
           staffLabel,
           dutyAccountIds: payload.dutyAccountIds,
+          dutyEmployeeIds: await boothPayrollEmployees(tx, operatorId, payload.dutyAccountIds),
           simulated: payload.simulated,
         },
         requestId: null,

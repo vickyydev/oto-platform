@@ -90,7 +90,7 @@ export async function loadMonthEnd(tenantId: string, entityId: string, monthValu
   const month = requireMonth(monthValue);
   const entity = await entityOf(db, tenantId, entityId);
   const [loaded, people] = await Promise.all([
-    loadPayrollWorld(tenantId, month, PAY_READER).catch(engineRefusal),
+    loadPayrollWorld(tenantId, month, {...PAY_READER, entityId}).catch(engineRefusal),
     payrollPeople(tenantId, `${month}-${String(monthDays(month)).padStart(2, "0")}`),
   ]);
   const run = loaded.runs.get(entity.id) ?? null;
@@ -153,7 +153,7 @@ export async function recordReview(tenantId: string, actor: PayrollActor, entity
   const action = body.action as AttendanceReview["action"];
   if (!["confirm", "override", "excuse"].includes(action)) throw new PayrollRefusal(400, "Choose confirm, override or excuse.");
   await entityOf(db, tenantId, entityId);
-  const loaded = await loadPayrollWorld(tenantId, month, PAY_READER).catch(engineRefusal);
+  const loaded = await loadPayrollWorld(tenantId, month, {...PAY_READER, entityId}).catch(engineRefusal);
   const day = loaded.world.attendance.find((d) => d.id === dayKey);
   if (!day) throw new PayrollRefusal(404, "Attendance day not found");
   const run = newCompanyDraft(entityId, month);
@@ -187,7 +187,7 @@ export async function confirmAllAttendance(tenantId: string, actor: PayrollActor
   const month = requireMonth(monthValue);
   const reason = requireReason(body.reason);
   await entityOf(db, tenantId, entityId);
-  const loaded = await loadPayrollWorld(tenantId, month, PAY_READER).catch(engineRefusal);
+  const loaded = await loadPayrollWorld(tenantId, month, {...PAY_READER, entityId}).catch(engineRefusal);
   const waiting = loaded.world.attendance.filter((d) => d.date.startsWith(month) && d.exceptions.some((e) => e.resolution === null));
   return db.transaction(async (tx) => {
     const { run, version } = await editableVersion(tx, tenantId, entityId, month);
@@ -291,7 +291,7 @@ export async function previewMonth(tenantId: string, entityId: string, monthValu
   const started = performance.now();
   // SCRUM-1075: whose pay has a line from a contract clause, and whose clause still waits for a person (outside the calculation and its signature).
   const marks = clauseMonthMarks(tenantId).catch(() => undefined);
-  const loaded = await loadPayrollWorld(tenantId, month, PAY_READER).catch(engineRefusal);
+  const loaded = await loadPayrollWorld(tenantId, month, {...PAY_READER, entityId}).catch(engineRefusal);
   const loadedAt = performance.now();
   const ref = loaded.runs.get(entity.id);
   const signature = sourceSignature(loaded);
