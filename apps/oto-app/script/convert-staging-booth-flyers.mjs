@@ -55,7 +55,7 @@ for (const person of candidates) {
       reason,
     });
   await call('clause-readings/' + encodeURIComponent(waiting.id) + '/approve', {
-    from: live.decided.effectiveFrom,
+    from: live.decided.effectiveFrom.slice(0, 7),
     until: live.decided.effectiveTo,
     reason,
   });

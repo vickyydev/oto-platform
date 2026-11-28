@@ -238,8 +238,9 @@ export async function loadBoothReport(
   const oldPay = await db.execute(sql`select 1 from payroll_incentive_clause_readings reading
     cross join lateral jsonb_array_elements(reading.rules) ref
     join payroll_incentive_assignments a on a.tenant_id=${tenantId} and a.rule_id::text=ref->>'ruleId'
-    where reading.tenant_id=${tenantId} and reading.employee_id=a.employee_id and not a.superseded
-      and a.effective_from<=${lastDay}::date and (a.effective_to is null or a.effective_to>=${month + '-01'}::date)
+    where reading.tenant_id=${tenantId} and reading.employee_id=a.employee_id and not a.superseded and not a.excluded
+      and a.effective_from<=${lastDay}::date
+      and (a.effective_to is null or a.effective_to>=greatest(${month + '-01'}::date, ${enabled.from}::date))
       and (reading.reading->'parts'->((ref->>'part')::int)->>'quote') ~* '(flyer|leaflet)'
       and (reading.reading->'parts'->((ref->>'part')::int)->>'quote') ~* '(return|redeem)' limit 1`);
   if (oldPay.rows.length)
