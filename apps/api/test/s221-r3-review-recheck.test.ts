@@ -27,6 +27,7 @@ import {
 } from './helpers';
 import { openQrAttempt } from '../src/services/payments/gateway';
 import { recordManualTender } from '../src/services/payments/terminal';
+import type { Tx } from '../src/services/tx';
 import { removeSaleBenefit } from '../src/services/benefit-checkout';
 
 /**
@@ -200,18 +201,39 @@ const roads: Record<string, (saleId: string) => Promise<Road>> = {
     call('POST', `/sales/${saleId}/finalise`, reception, { wallet: { key: `OTO-W-${newId()}`, useCredit: true } }),
 };
 
-/** Wait until some session is queued on a lock while touching `pos.sale`. */
-async function waitForSaleLockWait(): Promise<void> {
+/** Observe the actual blocker. PostgreSQL can truncate the displayed SQL before FOR UPDATE. */
+async function waitForSaleLockWait(holderPid: number): Promise<void> {
   const deadline = Date.now() + 15_000;
   for (;;) {
     const waiting = await ctx.db.execute(
       sql`select count(*)::int as n from pg_stat_activity
            where datname = current_database() and wait_event_type = 'Lock'
-             and query ilike '%"sale"%' and query ilike '%for update%'`,
+             and ${holderPid} = any(pg_blocking_pids(pid))`,
     );
     if (Number((waiting.rows[0] as { n: number }).n) > 0) return;
     if (Date.now() > deadline) throw new Error('nothing ever queued on the sale row');
     await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+}
+
+/** Start the second request while the first holds the sale row. Failure rolls back the first transaction. */
+async function raceOnSale<T, U>(first: (tx: Tx) => Promise<T>, second: () => Promise<U>): Promise<[T, U]> {
+  let pending: Promise<U> | undefined;
+  try {
+    const result = await ctx.db.transaction(async (tx) => {
+      const held = await first(tx);
+      const holder = await tx.execute(sql`select pg_backend_pid() as pid`);
+      pending = second();
+      await Promise.race([
+        waitForSaleLockWait(Number(holder.rows[0]!.pid)),
+        pending.then(() => { throw new Error('the second request finished before the sale lock was released'); }),
+      ]);
+      return held;
+    });
+    return [result, await pending!];
+  } finally {
+    // Also finish the second request if the lock observation failed and the holder rolled back.
+    await pending?.catch(() => undefined);
   }
 }
 
@@ -304,28 +326,17 @@ describe('REJECT 1 re-checked — the removal and a card, at the same instant', 
 
   it('the card first: the removal waits on the sale, then is refused SALE_HAS_PAYMENT; the sale closes with its benefit', async () => {
     const { saleId } = await rungUp();
-    let letCardCommit!: () => void;
-    const gate = new Promise<void>((resolve) => (letCardCommit = resolve));
-    let cardRecorded!: () => void;
-    const recorded = new Promise<void>((resolve) => (cardRecorded = resolve));
-    const card = ctx.db.transaction(async (tx) => {
-      const out = await recordManualTender(tx, tenderActor(), {
+    const [paid, refused] = await raceOnSale(
+      (tx) => recordManualTender(tx, tenderActor(), {
         saleId,
         approvalCode: '222222',
         tid: '12345678',
         last4: '4242',
         amountSatang: 1_000,
         actionId: newId(),
-      });
-      cardRecorded();
-      await gate;
-      return out;
-    });
-    await recorded;
-    const removal = call('DELETE', `/sales/${saleId}/benefit`, reception);
-    await waitForSaleLockWait();
-    letCardCommit();
-    const [paid, refused] = await Promise.all([card, removal]);
+      }),
+      () => call('DELETE', `/sales/${saleId}/benefit`, reception),
+    );
     expect(paid.attempt.status).toBe('approved');
     expect(`${refused.status} ${refused.body.error?.code ?? ''}`).toBe('409 SALE_HAS_PAYMENT');
     expect((await applicationsOf(saleId))[0]!.removedAt).toBeNull();
@@ -337,26 +348,15 @@ describe('REJECT 1 re-checked — the removal and a card, at the same instant', 
 
   it('the removal first: the card waits on the sale, then is refused RELEASED, and no attempt is written', async () => {
     const { saleId } = await rungUp();
-    let letRemovalCommit!: () => void;
-    const gate = new Promise<void>((resolve) => (letRemovalCommit = resolve));
-    let removed!: () => void;
-    const done = new Promise<void>((resolve) => (removed = resolve));
-    const removal = ctx.db.transaction(async (tx) => {
-      const out = await removeSaleBenefit(tx, { accountId: receptionId, operatorId }, saleId);
-      removed();
-      await gate;
-      return out;
-    });
-    await done;
-    const card = call('POST', '/payments/manual', reception, {
-      saleId,
-      approvalCode: '333333',
-      tid: '12345678',
-      last4: '4242',
-    });
-    await waitForSaleLockWait();
-    letRemovalCommit();
-    const [off, refused] = await Promise.all([removal, card]);
+    const [off, refused] = await raceOnSale(
+      (tx) => removeSaleBenefit(tx, { accountId: receptionId, operatorId }, saleId),
+      () => call('POST', '/payments/manual', reception, {
+        saleId,
+        approvalCode: '333333',
+        tid: '12345678',
+        last4: '4242',
+      }),
+    );
     expect(off.removed).toBe(true);
     expect(`${refused.status} ${refused.body.error?.code ?? ''}`).toBe('409 BENEFIT_APPLICATION_RELEASED');
     expect(await attemptsOf(saleId)).toEqual([]);

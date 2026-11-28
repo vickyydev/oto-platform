@@ -202,8 +202,10 @@ describe('the till’s copy of the family’s screen shows their photo, and neve
   it('shows the unticked agreement read-only on the staff mirror and keeps the Done controls on the guest display', () => {
     const form = open({ prompt: promptOf({ requestId: 'staff-mirror', familyStep: undefined, consentAcknowledged: false }),
       mirror: { step: null }, sends: false });
-    expect(form.testId('public-consent-ack')?.props.checked).toBe(false);
-    expect(form.testId('public-consent-ack')?.props.disabled).toBe(true);
+    const fields = form.testId('read-only-guest-fields');
+    expect(fields?.props.inert).toBe(true);
+    const agreement = elements(fields).find((node) => node.props['data-testid'] === 'public-consent-ack');
+    expect(agreement?.props.checked).toBe(false);
     expect(form.testId('consent-missing')).toBeUndefined();
     form.view.unmount();
   });

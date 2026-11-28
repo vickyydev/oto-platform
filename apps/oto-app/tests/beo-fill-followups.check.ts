@@ -237,6 +237,8 @@ const app = express();
 app.use(express.json({ limit: "1mb" }));
 app.use((req, res, next) => (req.get("x-test-as") ? fakeAuth(req, res, next) : next()));
 registerAIRoutes(app, fakeAuth, {
+  // These new fixture parties have no billed or paid items at the till.
+  paidLines: async () => new Map(),
   ai,
   readSetting: async () => null,
   inboxConfirmation: async (_req, conversationId) => {

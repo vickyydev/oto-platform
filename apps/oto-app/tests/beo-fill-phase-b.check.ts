@@ -258,6 +258,8 @@ const app = express();
 app.use(express.json({ limit: "1mb" }));
 app.use((req, res, next) => (req.get("x-test-as") ? fakeAuth(req, res, next) : next()));
 registerAIRoutes(app, fakeAuth, {
+  // These new fixture parties have no billed or paid items at the till.
+  paidLines: async () => new Map(),
   ai,
   // The park group's SAVED advice and output format, as staging has them: the conversation block reaches the model all the same.
   readSetting: async (_req, key) => (key === "ai_beo_parsing_advice" ? SAVED_ADVICE : key === "ai_beo_parsing_output_format" ? SAVED_FORMAT : null),

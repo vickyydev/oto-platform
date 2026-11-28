@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { schema } from '@oto/db';
 import { businessDate, newId, PAID_ONLINE_TENDER_CODE } from '@oto/shared';
 import { BRANCH_MANAGER, CENTRAL_BRANCH_CODE, RECEPTION, branchIdByCode,
@@ -274,14 +274,16 @@ describe('S2-15a settlement ledger', () => {
   it('keeps settlement evidence and terminal configuration when a bank attempt exists', async () => {
     const batches = await ctx.db.select().from(schema.settlementBatch);
     const lines = await ctx.db.select().from(schema.settlementLine);
-    const commands = await ctx.db.select().from(schema.settlementCommand);
+    const commandIds = batches.map((batch) => batch.commandId).filter((id): id is string => id !== null);
+    const readCommands = () => ctx.db.select().from(schema.boxCommand).where(inArray(schema.boxCommand.id, commandIds)).orderBy(schema.boxCommand.id);
+    const commands = await readCommands();
     expect(batches.length).toBeGreaterThan(0);
     expect(lines.length).toBeGreaterThan(0);
     expect(commands.length).toBeGreaterThan(0);
     await expect(resetDemoData(ctx.db)).rejects.toMatchObject({ code: 'GATEWAY_HISTORY_PRESENT' });
     expect(await ctx.db.select().from(schema.settlementBatch)).toEqual(batches);
     expect(await ctx.db.select().from(schema.settlementLine)).toEqual(lines);
-    expect(await ctx.db.select().from(schema.settlementCommand)).toEqual(commands);
+    expect(await readCommands()).toEqual(commands);
     expect(await ctx.db.select().from(schema.device).where(eq(schema.device.id, deviceId))).toHaveLength(1);
   });
 });
