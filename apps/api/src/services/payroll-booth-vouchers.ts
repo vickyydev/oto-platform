@@ -91,7 +91,7 @@ export async function payrollBoothVouchers(
         case when s.staff_account_id is not null then jsonb_build_array(s.staff_account_id) else '[]'::jsonb end) as "accountIds",
       a.snapshot->'dutyEmployeeIds' as "employeeIds",
       coalesce(a.snapshot->>'staffLabel', ev.payload->>'staffLabel') as "staffLabel",
-      coalesce(cv.bundle->'settings'->>'voucherShowStaff','true') <> 'false' as "staffPrinted"
+      coalesce(a.snapshot->>'dutyStaffPrinted',cv.bundle->'settings'->>'voucherShowStaff','true') <> 'false' as "staffPrinted"
     from promo.voucher v
     join booth.spin s on s.voucher_id = v.id and s.operator_id = v.operator_id and s.branch_id = v.branch_id and not s.simulated
     join booth.booth_config_version cv on cv.id=s.booth_config_version_id and cv.station_id=s.station_id

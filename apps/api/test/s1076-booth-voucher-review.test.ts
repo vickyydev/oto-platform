@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { and, eq, isNotNull } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
@@ -30,6 +30,7 @@ let branchId: string;
 let otherBranchId: string;
 const saleId = newId(),
   printed = newId(),
+  hidden = newId(),
   failedPrint = newId();
 const issuedAt = new Date('2026-11-28T16:59:00Z');
 const usedAt = new Date('2026-11-28T17:00:00Z');
@@ -78,7 +79,22 @@ beforeAll(async () => {
     role: 'booth',
     status: 'unclaimed',
   });
-  for (const id of [printed, failedPrint]) {
+  const hiddenVersion = newId();
+  const originalBundle = version.bundle as { settings: Record<string, unknown> };
+  const hiddenBundle = {
+    ...originalBundle,
+    settings: { ...originalBundle.settings, voucherShowStaff: false },
+  };
+  await ctx.db
+    .insert(boothConfigVersion)
+    .values({
+      ...version,
+      id: hiddenVersion,
+      version: version.version + 1000,
+      bundle: hiddenBundle,
+      bundleHash: createHash('sha256').update(JSON.stringify(hiddenBundle)).digest('hex'),
+    });
+  for (const id of [printed, failedPrint, hidden]) {
     await ctx.db.insert(voucher).values({
       id,
       operatorId,
@@ -86,7 +102,7 @@ beforeAll(async () => {
       voucherDefinitionId: source.voucherDefinitionId!,
       source: 'booth',
       code: randomUUID().replaceAll('-', '').toUpperCase(),
-      printCount: id === printed ? 2 : 0,
+      printCount: id === failedPrint ? 0 : 2,
       issuedAt,
     });
     await ctx.db.insert(spin).values({
@@ -95,7 +111,8 @@ beforeAll(async () => {
       branchId,
       stationId,
       boxId,
-      boothConfigVersionId: version.id,
+      boothConfigVersionId: id === hidden ? hiddenVersion : version.id,
+      staffAccountId: actor!.id,
       prizeId: source.id,
       voucherId: id,
       occurredAt: issuedAt,
@@ -168,6 +185,9 @@ describe('SCRUM-1076 — published booth and till records for payroll', () => {
       spendSatang: 0,
       reversedAt: null,
     });
+    expect(fact.accountIds).toHaveLength(1);
+    const concealed = records.find((v: { voucherId: string }) => v.voucherId === hidden);
+    expect(concealed).toMatchObject({ accountIds: [], employeeIds: [], staffLabel: null });
     expect(fact).not.toHaveProperty('code');
     expect(fact).not.toHaveProperty('customerPhone');
     expect(records.some((v: { voucherId: string }) => v.voucherId === failedPrint)).toBe(false);
@@ -189,17 +209,15 @@ describe('SCRUM-1076 — published booth and till records for payroll', () => {
     const [original] = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
     const liveId = newId(),
       nextUse = new Date(when.getTime() + 60000);
-    await ctx.db
-      .insert(sale)
-      .values({
-        ...original!,
-        id: liveId,
-        status: 'paid',
-        occurredAt: nextUse,
-        businessDate: '2026-12-02',
-        voidedAt: null,
-        voidReason: null,
-      });
+    await ctx.db.insert(sale).values({
+      ...original!,
+      id: liveId,
+      status: 'paid',
+      occurredAt: nextUse,
+      businessDate: '2026-12-02',
+      voidedAt: null,
+      voidReason: null,
+    });
     const [usage] = await ctx.db
       .select()
       .from(voucherRedemption)

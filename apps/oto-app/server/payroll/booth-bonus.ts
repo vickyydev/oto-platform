@@ -431,12 +431,8 @@ export async function loadBoothReport(
           frozen?.rateSatang ??
           (own && (!own.until || own.until >= f.issuedDay) ? own.rateSatang : null) ??
           policy.rateSatang;
-        if (frozen && frozen.saleId !== f.saleId) {
-          await tx
-            .update(payrollBoothBonuses)
-            .set({ saleId: f.saleId, usedAt: new Date(f.usedAt), month })
-            .where(eq(payrollBoothBonuses.id, frozen.id));
-        } else if (!frozen)
+        // The first-count row is immutable. Any later surviving sale is evidenced by this run's own snapshot.
+        if (!frozen)
           candidates.push({
             tenantId,
             voucherId: f.voucherId,
