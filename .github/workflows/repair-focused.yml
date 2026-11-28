@@ -5,16 +5,48 @@ on:
 permissions:
   contents: read
 jobs:
-  api-types:
+  birthday-forms:
     runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: apps/oto-app
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
-      - run: pnpm install --filter '@oto/api...' --filter '@oto/pos...' --filter oto-platform --frozen-lockfile
-      - run: pnpm --filter @oto/api exec tsc -p tsconfig.json --noEmit --pretty false
+          cache: npm
+          cache-dependency-path: apps/oto-app/package-lock.json
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Prepare isolated payroll and event database
+        run: |
+          sudo pg_ctlcluster 16 main start
+          sudo -u postgres createuser --superuser "$(whoami)"
+          createdb workorder_ci
+          psql -d workorder_ci -c 'create schema otoapp'
+      - name: Check party forms against the isolated database
         env:
-          NODE_OPTIONS: --max-old-space-size=4096
+          PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome
+          TSX_TSCONFIG_PATH: tests/tsconfig.jsx.json
+        run: |
+          node --input-type=module <<'JS'
+          import {spawnSync} from 'node:child_process';
+          const database = new URL('postgresql:///');
+          database.pathname = '/workorder_ci';
+          database.searchParams.set('host','/var/run/postgresql');
+          process.env.DATABASE_URL = database.toString();
+          const migrate=spawnSync('npm',['run','db:migrate'],{encoding:'utf8'});
+          if(migrate.status!==0){console.error('Synthetic database migration failed.');process.exit(1);}
+          const suites=['beo-catalogue-fill','beo-fill-till-menu','beo-left-978','kitchen-adults','till-kitchen-edit','kitchen-plan-view','beo-guests-socks-db','beo-timeline','beo-activities-times','beo-activity-people-db','beo-extra-price','party-menu-item','till-menu','beo-four-sections-ui','beo-additional-bill-ui','birthday-packages','deposit-save'];
+          for(const suite of suites){
+            const run=spawnSync('node',['--import','tsx','tests/'+suite+'.check.ts'],{encoding:'utf8',maxBuffer:16*1024*1024});
+            console.log(suite,run.status===0?'passed':'failed');
+            if(run.status!==0){
+              process.exitCode=1;
+              const failed=[...(run.stdout??'').matchAll(/"([A-Za-z][A-Za-z0-9_.]+)"\s*:\s*false/g)].map(m=>m[1]);
+              console.log('Failing checks:',[...new Set(failed)].join(', '));
+              const locations=[...(run.stderr??'').matchAll(/(?:tests|server|shared)\/[A-Za-z0-9_./-]+\.tsx?:\d+:\d+/g)].map(m=>m[0]);
+              console.log('Source locations:',[...new Set(locations)].slice(0,8).join(', '));
+            }
+          }
+          JS

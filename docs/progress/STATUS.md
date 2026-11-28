@@ -1,3 +1,5 @@
+**28 November 2026, kitchen and till-menu checks.** Five test suites for kitchen changes and menu editing expected a save while their synthetic till had no unpaid-party billing response. Their fixture till now answers only for the test’s parties. Two PDF suites are running with the standard CI Chrome setting. The verification uses the same application and package source as `303373df7`.
+
 **28 November 2026, proxy response compiler check.** The API compiler found one test assuming a JSON response already had an error property. The check now verifies the complete refusal object. Its four local proxy tests passed. This runner checks the compiler with all required API and till test dependencies at product source `2b29d2471`.
 
 **28 November 2026, downstream party checks.** A separate read-only hosted run exercises the other kitchen, till-menu, deposit and BEO cases that consume the same paid-item checks. The source still matches `6334ebdaf`. The previous run independently covers the API compiler and eleven party-form suites.

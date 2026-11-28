@@ -1,3 +1,5 @@
+**28 November 2026, downstream rerun.** Inspect the isolated kitchen and till-menu cases and the two PDF render checks. The API compiler result is separate. The moved tests exercise the same live billing protection in the work order.
+
 **28 November 2026, API compiler rerun.** Read the exit status for the full API compiler on the isolated runner. The eleven party-form suites passed. The downstream kitchen and deposit check runs separately.
 
 **28 November 2026, downstream diagnosis.** Inspect this runner for other kitchen or party tests that lack a synthetic billing record. Keep the public release proof tied to main’s full workflow.
