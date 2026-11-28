@@ -289,7 +289,13 @@ export async function saveIncentiveIn(tx: Tx, tenantId: string, actor: PayrollAc
       if (!rule) throw new PayrollRefusal(404, "Incentive rule not found");
     }
     const ruleId = existingId ?? randomUUID();
-    const branchIds = new Set([...(strings((rawTerms.base as Record<string, unknown> | undefined)?.branches) ? (rawTerms.base as { branches: string[] }).branches : []), ...titles.flatMap((t) => t.branches)]);
+    const baseParks = (rawTerms.base as { branches?: unknown } | undefined)?.branches;
+    const policyParks = (rawTerms.assignedRevenue as { parks?: unknown } | undefined)?.parks;
+    const branchIds = new Set([
+      ...(strings(baseParks) ? baseParks as string[] : []),
+      ...(strings(policyParks) ? policyParks as string[] : []),
+      ...titles.flatMap(t => t.branches),
+    ]);
     const ownBranches = await tenantBranchIds(tx, tenantId, Array.from(branchIds));
     if (titles.some((t) => t.branches.some((b) => !ownBranches.has(b)))) throw new PayrollRefusal(400, "Choose branches of this park group.");
     const terms = readTerms(rawTerms, ruleId, await liveStreams(tx, tenantId), ownBranches);
