@@ -14,7 +14,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --filter '@oto/api...' --frozen-lockfile
+      - run: pnpm install --filter '@oto/api...' --filter '@oto/pos...' --filter oto-platform --frozen-lockfile
       - run: pnpm --filter @oto/api exec tsc -p tsconfig.json --noEmit --pretty false
         env:
           NODE_OPTIONS: --max-old-space-size=4096

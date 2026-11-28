@@ -1,3 +1,5 @@
+**28 November 2026, hosted compiler setup corrected.** The API tests import the till’s browser harness. The isolated compiler job omitted its Playwright and Vite packages. Its rerun installs both workspaces from the lockfile. The source revision remains `948df48fe`.
+
 **28 November 2026, isolated verification of the release repair.** This verification branch compiles the API and exercises 11 birthday-form checks against an empty local-runner database. The source matches `948df48fe`. No deployment is triggered by this workflow.
 
 **28 November 2026, local release checks.** All 59 checks on settlement, checkout, database locking and route transactions passed. The 10 booking, inbox and demo suites passed 199 checks, with nine existing skips. All 12 staff-mirror tests passed. The hosted checkout now merges the bank response with details already saved on the attempt. Its test changes a second field while the bank response is pending and verifies that both facts survive. The local API typecheck stopped at the laptop memory reserve and must finish on the hosted runner. No main deployment is claimed.
