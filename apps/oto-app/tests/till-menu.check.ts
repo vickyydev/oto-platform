@@ -29,6 +29,7 @@
 //
 // Usage, from apps/oto-app, with DATABASE_URL set:
 //   npx tsx tests/till-menu.check.ts
+import { answerUnpaidPartyBilling } from "./fixtures/unpaid-party-till";
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
 import { randomBytes, randomUUID, scryptSync } from "node:crypto";
@@ -131,7 +132,10 @@ const succeed: Reply = (req, res) => {
 let reply: Reply = succeed;
 /** Per platform branch, when a test wants one park's till to behave otherwise. */
 const replyFor = new Map<string, Reply>();
+const fixtureParties = new Set<string>();
+const fixtureProvisionKey = randomUUID();
 const platform = createServer((req, res) => {
+  if (answerUnpaidPartyBilling(req, res, fixtureParties, fixtureProvisionKey)) return;
   asked.push({ method: req.method ?? "", url: req.url ?? "", headers: req.headers });
   const branchId = new URL(req.url ?? "/", "http://x").searchParams.get("branchId") ?? "";
   (replyFor.get(branchId) ?? reply)(req, res);
@@ -146,7 +150,7 @@ const hangUp: Reply = (req) => { req.socket.destroy(); };
 
 await check("the client: the key as a Bearer, no session, the park's platform branch; the till's items read", async () => {
   forgetTillMenus();
-  const config = { apiUrl: PLATFORM_API_URL, key: "zz-905-key" };
+  const config = { apiUrl: PLATFORM_API_URL, key: fixtureProvisionKey };
   const branchId = randomUUID();
   const read = await readTillMenu(config, branchId.toUpperCase(), "req-905");
   assert.ok(read.ok, JSON.stringify(read));
@@ -154,14 +158,14 @@ await check("the client: the key as a Bearer, no session, the park's platform br
   const sent = asked.at(-1)!;
   assert.equal(sent.method, "GET");
   assert.equal(sent.url, `/otoapp/party-menu/catalogue?branchId=${branchId}`, "the branch as the till spells it");
-  assert.equal(sent.headers.authorization, "Bearer zz-905-key");
+  assert.equal(sent.headers.authorization, `Bearer ${fixtureProvisionKey}`);
   assert.equal(sent.headers.cookie, undefined, "no platform session travels");
   assert.equal(sent.headers["x-request-id"], "req-905");
 });
 
 await check("a minute in memory: one park's answer held 60 s, asked once while in flight; another park asked on its own", async () => {
   forgetTillMenus();
-  const config = { apiUrl: PLATFORM_API_URL, key: "zz-905-key" };
+  const config = { apiUrl: PLATFORM_API_URL, key: fixtureProvisionKey };
   const branchId = randomUUID();
   let clock = 1_000_000;
   const now = () => clock;
@@ -182,11 +186,11 @@ await check("a minute in memory: one park's answer held 60 s, asked once while i
 
 await check("a refusal is said in words and never held: its key refused, a park it does not know, no answer, an answer it cannot read", async () => {
   forgetTillMenus();
-  const config = { apiUrl: PLATFORM_API_URL, key: "zz-905-key" };
+  const config = { apiUrl: PLATFORM_API_URL, key: fixtureProvisionKey };
   const branchId = randomUUID();
   reply = refuse(401, "OTOAPP_PROVISION_UNAUTHORIZED", "x");
   const key = await readTillMenu(config, branchId);
-  assert.ok(!key.ok && key.status === 503 && /provisioning key/.test(key.message) && !key.message.includes("zz-905-key"));
+  assert.ok(!key.ok && key.status === 503 && /provisioning key/.test(key.message) && !key.message.includes(fixtureProvisionKey));
   reply = refuse(404, "NOT_FOUND", "Branch not found");
   const unknown = await readTillMenu(config, branchId);
   assert.ok(!unknown.ok && unknown.status === 404 && /does not know this park/.test(unknown.message));
@@ -248,6 +252,7 @@ async function party(tenant: string, branch: string) {
     [id, tenant, branch, `ZZ TEST BEO 905 ${run}`],
   );
   await q("insert into beo_package_snapshots (id, event_id, package_name, base_price) values ($1, $2, 'ZZ TEST package', 1690000)", [randomUUID(), id]);
+  fixtureParties.add(id);
   return id;
 }
 
@@ -345,7 +350,7 @@ const signIn = async (origin: string, email: string) => {
 };
 
 try {
-  const keyed = await serve({ OTOAPP_PROVISION_KEY: "zz-905-key" });
+  const keyed = await serve({ OTOAPP_PROVISION_KEY: fixtureProvisionKey });
   const unkeyed = await serve({ OTOAPP_PROVISION_KEY: "" });
   const manager = await signIn(keyed, managerA.email);
   const staff = await signIn(keyed, staffA.email);
@@ -365,7 +370,7 @@ try {
     assert.equal(asked.length, before + 1);
     const sent = asked.at(-1)!;
     assert.equal(sent.url, `/otoapp/party-menu/catalogue?branchId=${floresta.coreBranch}`);
-    assert.equal(sent.headers.authorization, "Bearer zz-905-key");
+    assert.equal(sent.headers.authorization, `Bearer ${fixtureProvisionKey}`);
     assert.equal(sent.headers.cookie, undefined, "the person's session never travels to the platform");
     assert.equal((await menu(keyed, manager, floresta.id)).status, 200);
     assert.equal(asked.length, before + 1, "the second screen within the minute: the held answer");

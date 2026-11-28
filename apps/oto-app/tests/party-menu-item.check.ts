@@ -30,6 +30,7 @@
 //
 // Usage, from apps/oto-app, with DATABASE_URL set:
 //   npx tsx tests/party-menu-item.check.ts
+import { answerUnpaidPartyBilling } from "./fixtures/unpaid-party-till";
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
 import { randomBytes, randomUUID, scryptSync } from "node:crypto";
@@ -101,18 +102,14 @@ let reply: Reply = succeed;
  */
 const additions: Asked[] = [];
 const ADDITIONS = /^\/otoapp\/parties\/[^/]+\/beo-additions$/;
+const fixtureParties = new Set<string>();
+const fixtureProvisionKey = randomUUID();
 const platform = createServer((req, res) => {
+  if (answerUnpaidPartyBilling(req, res, fixtureParties, fixtureProvisionKey)) return;
   let raw = "";
   req.on("data", (c) => (raw += c));
   req.on("end", () => {
     const body = JSON.parse(raw || "{}") as Record<string, unknown>;
-    // SCRUM-1002: a BEO Save of a plan with billed lines asks the party's billing first; this
-    // stand-in knows no party's money, so the Save is written as sent and the ask counts nowhere.
-    if (/^\/otoapp\/parties\/[^/]+\/billing$/.test(req.url ?? "")) {
-      res.writeHead(404, { "content-type": "application/json" });
-      res.end(JSON.stringify({ error: { code: "NOT_FOUND", message: "Party not found" } }));
-      return;
-    }
     if (ADDITIONS.test(req.url ?? "")) {
       additions.push({ url: req.url ?? "", headers: req.headers, body });
       res.writeHead(200, { "content-type": "application/json" });
@@ -132,7 +129,7 @@ const refuse = (status: number, code: string, message: string): Reply => (_req, 
 const hangUp: Reply = (req) => { req.socket.destroy(); };
 
 await check("the client: the key as a Bearer and the press as the Idempotency-Key, no session; the platform's answers and refusals read", async () => {
-  const config = { apiUrl: PLATFORM_API_URL, key: "zz-828-key" };
+  const config = { apiUrl: PLATFORM_API_URL, key: fixtureProvisionKey };
   const actionId = randomUUID();
   const input = {
     actionId, branchId: randomUUID(), name: "ZZ TEST unicorn cake", station: "kitchen" as const, priceSatang: null, free: true,
@@ -142,7 +139,7 @@ await check("the client: the key as a Bearer and the press as the Idempotency-Ke
   assert.equal(first.ok, true);
   const sent = asked.at(-1)!;
   assert.equal(sent.url, "/otoapp/party-menu/products");
-  assert.equal(sent.headers.authorization, "Bearer zz-828-key");
+  assert.equal(sent.headers.authorization, `Bearer ${fixtureProvisionKey}`);
   assert.equal(sent.headers["idempotency-key"], actionId);
   assert.equal(sent.headers.cookie, undefined, "no platform session travels");
   assert.equal(sent.headers["x-request-id"], "req-828");
@@ -156,7 +153,7 @@ await check("the client: the key as a Bearer and the press as the Idempotency-Ke
   assert.deepEqual(refused, { ok: false, status: 409, code: "IDEMPOTENCY_MISMATCH", message: "Idempotency-Key was already used with a different request The line was not added." });
   reply = refuse(401, "OTOAPP_PROVISION_UNAUTHORIZED", "x");
   const keyRefused = await createPartyMenuProduct(config, input);
-  assert.ok(!keyRefused.ok && keyRefused.status === 503 && /provisioning key/.test(keyRefused.message) && !keyRefused.message.includes("zz-828-key"));
+  assert.ok(!keyRefused.ok && keyRefused.status === 503 && /provisioning key/.test(keyRefused.message) && !keyRefused.message.includes(fixtureProvisionKey));
   reply = (_req, res) => { res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify({ productId: "x" })); };
   const unreadable = await createPartyMenuProduct(config, input);
   assert.ok(!unreadable.ok && unreadable.code === "PLATFORM_UNREADABLE");
@@ -207,6 +204,7 @@ async function party(g: { tenant: string; branch: string }, title: string, withP
   if (withPackage) {
     await q("insert into beo_package_snapshots (id, event_id, package_name, base_price) values ($1, $2, 'ZZ TEST package', 1690000)", [randomUUID(), id]);
   }
+  fixtureParties.add(id);
   return id;
 }
 
@@ -299,7 +297,7 @@ const signIn = async (origin: string, email: string) => {
 };
 
 try {
-  const keyed = await serve({ OTOAPP_PROVISION_KEY: "zz-828-key" });
+  const keyed = await serve({ OTOAPP_PROVISION_KEY: fixtureProvisionKey });
   const unkeyed = await serve({ OTOAPP_PROVISION_KEY: "" });
   const admin = await signIn(keyed, adminA.email);
   const manager = await signIn(keyed, managerA.email);
@@ -322,10 +320,10 @@ try {
     // key; an unsettled party keeps them on the plan.
     assert.equal(additions.length, additionsBefore + 1);
     assert.equal(additions.at(-1)!.url, `/otoapp/parties/${partyA}/beo-additions`);
-    assert.equal(additions.at(-1)!.headers.authorization, "Bearer zz-828-key");
+    assert.equal(additions.at(-1)!.headers.authorization, `Bearer ${fixtureProvisionKey}`);
     assert.equal(res.body.additionalBilling?.status, "plan_only");
     const sent = asked.at(-1)!;
-    assert.equal(sent.headers.authorization, "Bearer zz-828-key");
+    assert.equal(sent.headers.authorization, `Bearer ${fixtureProvisionKey}`);
     assert.equal(sent.headers["idempotency-key"], actionId);
     assert.equal(sent.headers.cookie, undefined);
     assert.deepEqual(sent.body, {

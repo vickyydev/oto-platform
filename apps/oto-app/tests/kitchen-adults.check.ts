@@ -50,6 +50,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { createServer as createHttpServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
+import { serveUnpaidPartyBilling } from "./fixtures/unpaid-party-till";
 import express, { type NextFunction, type Request, type Response } from "express";
 import pg from "pg";
 
@@ -232,6 +233,7 @@ const server = createHttpServer(app);
 servers.push(server);
 await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", () => resolve()));
 const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+serveUnpaidPartyBilling(app, base, Object.values(ev));
 async function send(method: string, path: string, body?: unknown) {
   const response = await fetch(`${base}${path}`, {
     method,
