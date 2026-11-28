@@ -48,6 +48,8 @@ function Checks({ options, value, onChange }: { options: { value: string; label:
     <input type="checkbox" checked={value.includes(o.value)} onChange={() => onChange(toggle(value, o.value))} />{o.label}</label>)}</div>;
 }
 
+import { BoothBonusCard } from "@/components/payroll-booth-bonus";
+
 export default function PayrollRewardsPage() {
   const { user } = useAuth();
   const rewards = useRewards();
@@ -64,7 +66,7 @@ export default function PayrollRewardsPage() {
       <span className="font-semibold underline">Open</span></Link>
     {rewards.isLoading && <Skeleton className="h-64 w-full" />}
     {rewards.error && <Empty>{errorText(rewards.error)}</Empty>}
-    {rewards.data && <><ServicePolicies view={rewards.data} /><Incentives view={rewards.data} /></>}
+    {rewards.data && <><ServicePolicies view={rewards.data} /><BoothBonusCard/><Incentives view={rewards.data} /></>}
   </div>;
 }
 

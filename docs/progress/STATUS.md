@@ -1,3 +1,9 @@
+## 28 November 2026, 20:32 Bangkok — Booth voucher payroll lands with first-day staging proof
+
+SCRUM-1076, Payroll: 10 baht per redeemed booth voucher to each staff member named on it, counted from the booth and till records. The separate booth settings card saves dated rules and individual overrides. Four flyer approvals now use the same recorded voucher count. The virtual booth printed six slips with two people on the roster. The cash till produced one qualifying redemption and one same-day full refund. November’s payroll preview and both spend reports matched the second agent’s count. Three inspected pictures are attached to Jira (13944–13946). One slip is being held until Bangkok midnight to test expiry and the next dated rule. See `docs/qa/jira-comments/attachments/SCRUM-1076/20261128-staging.md`.
+
+The incoming release includes the month-only conversion correction and the staging-discovered overlap correction. Applied HR migrations remain immutable. Staging alone has the test rules and cash trial. Production HR has a separate exact target.
+
 ## 28 November 2026, 20:31 Bangkok — Main green, four staging screens verified, sign-in change lands
 
 SCRUM-1082, Main: the automatic checks pass again (failing since 23 November), is Deployed. All six jobs passed on `d4e58398f`, run `46146359448`. Seven staging services served that revision. HR served `5e46d3c2a`, Radar `2696de697` and the QA worker `81c7642ab`. The public sign-in, virtual till ticket grid containing playable items, signed-in HR dashboard and signed-in Inbox opened. Four inspected staging pictures are attached to the ticket as 13947–13950. The exact service list is in `docs/qa/jira-comments/attachments/SCRUM-1082/20261128-staging.md`.

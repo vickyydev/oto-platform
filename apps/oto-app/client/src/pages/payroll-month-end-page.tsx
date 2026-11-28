@@ -66,6 +66,8 @@ function clauseOf(preview: PreviewView | undefined) {
 }
 const unpaidStates = new Set(["not-read", "waiting"]);
 
+import { BoothBonusReport } from "@/components/payroll-booth-bonus";
+
 export default function PayrollMonthEndPage() {
   const { user } = useAuth();
   const search = new URLSearchParams(useSearch());
@@ -561,6 +563,7 @@ function PreviewTab({ view, entityId, month, active, onOpenTab }: { view: MonthE
   ];
   const approved = (id?: string) => !!id && view.thirdParty.some((a) => a.employeeId === id && a.current);
   return <div className="space-y-4">
+    <BoothBonusReport month={month}/>
     <p className="text-xs text-muted-foreground">{frozen
       ? `The frozen ${monthLabel(month)} of version ${preview.data.run?.version} · source ${signature.slice(0, 19)}…`
       : `${monthLabel(month)} from what is saved now · calculated in ${timing.loadMs + timing.calculateMs} ms · source ${signature.slice(0, 19)}…`}</p>
@@ -622,7 +625,9 @@ function PersonLines({ person, names, clauseComponents }: { person: CompanyPerso
     return <div><p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
       <ul className="divide-y rounded-md border bg-background">{lines.map((l) => <li key={l.id} className="flex flex-wrap items-start gap-2 px-2 py-1.5 text-xs">
         <span className="min-w-[10rem] flex-1">{clauseComponents?.has(l.component) && <span className="mr-1 inline-flex align-middle"><ClauseMark title="From the contract clause, approved reading" /></span>}<span className="font-medium">{withBranchNames(l.label, names)}</span>{l.overridden && <Badge variant="outline" className="ml-1">Overridden</Badge>}
-          <span className="block text-muted-foreground">{withBranchNames(l.formula, names)}</span></span>
+          <span className="block text-muted-foreground">{withBranchNames(l.formula, names)}</span>
+          {l.component==="incentive:booth-voucher" && <details><summary><ClauseMark title="From the printed booth roster and paid till sale"/> Vouchers</summary>
+            <ul>{l.inputs.map(line=><li key={line}>{line}</li>)}</ul></details>}</span>
         <span className="text-muted-foreground">{l.allocations.map((a) => `${names?.[a.costCentre] ?? (a.costCentre === "owner-non-operational" ? "Owner – non-operational" : a.costCentre)} ${money(a.amount)}`).join(" · ")}</span>
         <span className="w-28 text-right font-semibold tabular-nums">{category === "deduction" ? `−${money(l.amount)}` : money(l.amount)}</span></li>)}</ul></div>;
   };

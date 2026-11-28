@@ -52,6 +52,7 @@ import { branchCloneRoutes } from './routes/branch-clone';
 import { menuRoutes } from './routes/menu';
 import { otoAppPartyMenuRoutes } from './routes/otoapp-party-menu';
 import { otoAppPartyBillingRoutes } from './routes/otoapp-party-billing';
+import { otoAppPayrollBoothRoutes } from './routes/otoapp-payroll-booth';
 import { otoAppPartyDepositRoutes } from './routes/otoapp-party-deposit';
 import { stockRoutes } from './routes/stock';
 import { auditRoutes } from './routes/audit';
@@ -507,6 +508,7 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // SCRUM-822 — the OTO App server's read of a party's money from the till:
   // the quote before settlement, the sale after it (its provisioning key).
   await app.register(otoAppPartyBillingRoutes, { prefix: '/otoapp' });
+  await app.register(otoAppPayrollBoothRoutes, { prefix: '/otoapp' });
   // SCRUM-825 — the OTO App server's doors for a party's deposit request, the
   // parent's menu link and their choices (its provisioning key).
   await app.register(otoAppPartyDepositRoutes, { prefix: '/otoapp' });

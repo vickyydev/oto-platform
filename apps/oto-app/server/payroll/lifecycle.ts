@@ -95,8 +95,8 @@ async function userName(tx: Tx, userId: string | null): Promise<string> {
   return u?.fullName?.trim() || u?.email || userId;
 }
 
-async function loadWorld(tenantId: string, month: string): Promise<LoadedWorld> {
-  return loadPayrollWorld(tenantId, month, PAY_READER).catch(transitionRefusal);
+async function loadWorld(tenantId: string, month: string, entityId: string): Promise<LoadedWorld> {
+  return loadPayrollWorld(tenantId, month, {...PAY_READER, entityId}).catch(transitionRefusal);
 }
 
 // ─── GM confirm ──────────────────────────────────────────────────────────────
@@ -108,7 +108,7 @@ export async function confirmRun(tenantId: string, actor: PayrollActor, entityId
   const revision = options.engineRevision ?? ENGINE_REVISION;
   return db.transaction(async (tx) => {
     const { run, version } = await currentVersion(tx, tenantId, entity.id, month);
-    const loaded = await loadWorld(tenantId, month);
+    const loaded = await loadWorld(tenantId, month, entity.id);
     const signature = sourceSignature(loaded, revision);
     if (version.status === "gm-confirmed" && version.approvedSignature === signature) {
       return { status: version.status, version: version.version, signature, unchanged: true };
@@ -154,7 +154,7 @@ export async function lockRun(tenantId: string, actor: PayrollActor, entityId: s
         .where(and(eq(payrollRunSnapshots.tenantId, tenantId), eq(payrollRunSnapshots.runVersionId, version.id))).limit(1);
       return { status: version.status, version: version.version, snapshotId: frozen?.id ?? null, unchanged: true };
     }
-    const loaded = await loadWorld(tenantId, month);
+    const loaded = await loadWorld(tenantId, month, entity.id);
     const gmName = await userName(tx, version.gmUserId);
     const k = key(entity.id, month);
     if (loaded.doc.runs[k] && gmName) loaded.doc.runs[k].gmActor = gmName;
@@ -298,7 +298,7 @@ export async function recordOvertimeDecision(tenantId: string, actor: PayrollAct
   const outcome = body.outcome as OvertimeDecision["outcome"];
   if (!["Pay", "Bank", "Reject"].includes(outcome)) throw new PayrollRefusal(400, "Choose Pay, Bank or Reject.");
   const entity = await entityOf(db, tenantId, entityId);
-  const loaded = await loadWorld(tenantId, month);
+  const loaded = await loadWorld(tenantId, month, entity.id);
   const day = loaded.world.attendance.find((d) => d.id === dayKey && d.date.startsWith(`${month}-`));
   const actualExceptionIndex = day?.exceptions.findIndex((e) => e.kind === "overtime") ?? -1;
   const exceptionIndex = body.exceptionIndex === undefined ? actualExceptionIndex : body.exceptionIndex;
@@ -374,7 +374,7 @@ export async function approveThirdParty(tenantId: string, actor: PayrollActor, e
   const month = requireMonth(monthValue);
   const reason = requireReason(body.reason);
   const entity = await entityOf(db, tenantId, entityId);
-  const loaded = await loadWorld(tenantId, month);
+  const loaded = await loadWorld(tenantId, month, entity.id);
   let person;
   try {
     validateCompanyDocument(loaded.doc);

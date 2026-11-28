@@ -1,3 +1,7 @@
+## Resume — 28 November 2026, 20:32 Bangkok
+
+SCRUM-1076 has reached main with the dated settings, raw-count API, payroll preview and spend report. The first-day staging proof and both readbacks are on Jira. Await the genuine Bangkok midnight boundary, redeem the held slip at the virtual cash till, and issue and redeem a new slip under the second rule. Reconcile the resulting counts independently. The next separate main landing is SCRUM-1075. Keep live HR pinned to the rehearsed November 26 target.
+
 ## Resume — 28 November 2026, 20:31 Bangkok
 
 Main CI was green at `d4e58398f`. All four staging screens opened and SCRUM-1082 is Deployed with screenshots. The next landing contains the staging-tested SCRUM-1061 form. Its no-send cases passed; per-number reasons and independent verification of delivery remain open. No production sign-in release. Next land the booth and payroll changes separately and keep the verified candidate serving for the real midnight exercise. Live HR remains a separate named release at 22:30 Bangkok.

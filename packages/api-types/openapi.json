@@ -18276,6 +18276,186 @@
         }
       }
     },
+    "/otoapp/payroll/booth-vouchers": {
+      "get": {
+        "description": "Printed booth vouchers and their first till redemption for a payroll month at a park belonging to the provisioning key.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "query",
+            "name": "branchId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+            },
+            "in": "query",
+            "name": "month",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "query",
+            "name": "after",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "records": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "voucherId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "stationId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "booth": {
+                            "type": "string"
+                          },
+                          "timezone": {
+                            "type": "string"
+                          },
+                          "issuedAt": {
+                            "type": "string"
+                          },
+                          "issuedDay": {
+                            "type": "string"
+                          },
+                          "issuedMonth": {
+                            "type": "string"
+                          },
+                          "usedAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "usedDay": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "saleId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "saleState": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "spendSatang": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "reversedAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "reversals": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "saleId": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "usedDay": {
+                                  "type": "string"
+                                },
+                                "at": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "saleId",
+                                "usedDay",
+                                "at"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "sharedCode": {
+                            "type": "boolean"
+                          },
+                          "accountIds": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "format": "uuid"
+                            }
+                          },
+                          "employeeIds": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "nullable": true
+                          },
+                          "staffLabel": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "voucherId",
+                          "stationId",
+                          "booth",
+                          "timezone",
+                          "issuedAt",
+                          "issuedDay",
+                          "issuedMonth",
+                          "usedAt",
+                          "usedDay",
+                          "saleId",
+                          "saleState",
+                          "spendSatang",
+                          "reversedAt",
+                          "reversals",
+                          "sharedCode",
+                          "accountIds",
+                          "employeeIds",
+                          "staffLabel"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "next": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "records",
+                    "next"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/otoapp/parties/{eventId}/deposit-request": {
       "get": {
         "description": "OTO App server only (provisioning key): a party's deposit requests as the platform holds them — the open one (else the newest) and every one, each with its state (requested, paid, expired, cancelled), the payment link and its validity, when it was reminded, handed over or paid, the deposit figure it set and the write-back's state; and whether the party is linked to an inbox conversation the assistant can post in. Read only.",
@@ -39739,6 +39919,27 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "bonus": {
+                      "type": "object",
+                      "properties": {
+                        "rateSatang": {
+                          "type": "integer"
+                        },
+                        "window": {
+                          "type": "string"
+                        },
+                        "from": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "rateSatang",
+                        "window",
+                        "from"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
                     "businessDate": {
                       "type": "string"
                     },
@@ -39901,6 +40102,7 @@
                     }
                   },
                   "required": [
+                    "bonus",
                     "businessDate",
                     "rule",
                     "roster",

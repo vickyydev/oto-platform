@@ -52,6 +52,7 @@
  * with why.
  */
 import { createHash } from "node:crypto";
+import { loadBoothReport } from "./booth-bonus";
 import { and, asc, eq, gte, inArray, lt, lte } from "drizzle-orm";
 import {
   branches,
@@ -197,6 +198,7 @@ export interface LoadOptions {
   today?: string;
   /** SCRUM-1055: true for the readers that compute and show pay; former employees' single shifts join the month. */
   singleShifts?: boolean;
+  entityId?: string;
 }
 
 /** The pay readers' load: the month with its single shifts (SCRUM-1055). */
@@ -548,6 +550,12 @@ export async function loadPayrollWorld(tenantId: string, month: string, options:
       gmActor: s.gmActor, result: s.result as CompanyResult } as CompanySnapshot)),
     audit: [],
   };
+  const entityStatus = options.entityId ? runRefs.get(options.entityId)?.status : undefined;
+  if (options.singleShifts && entityStatus !== "locked" && entityStatus !== "paid") {
+    const clockDays = new Set(world.attendance.filter(d=>d.actualClockIn || d.effectiveClockIn).map(d=>d.staffId+"|"+d.date));
+    const report = await loadBoothReport(tenantId,month,{from:windowFrom,clockDays});
+    if(report.active) doc.boothAwards = report.awards;
+  }
   world.companyPayroll = doc;
   return { tenantId, month, world, doc, excluded, notes, runs: runRefs, attendance: feed.days, queries };
 }
@@ -580,6 +588,7 @@ export function sourceSignature(loaded: Pick<LoadedWorld, "world" | "doc" | "mon
   const prev = previousMonth(month);
   const source = {
     engine: engineRevision,
+    ...(doc.boothAwards?.length ? {boothAwards:doc.boothAwards} : {}),
     branches: Object.values(world.branches).map((b) => ({ id: b.id, staff: b.staff, details: b.detailsHistory, rules: b.rulesHistory, deductions: b.deductionRules, leave: b.leavePolicyHistory })),
     entities: world.payingEntities, accounts: world.payingAccounts, ewf: world.ewfSettings, remittances: world.ewfRemittances,
     leaveLedger: world.leaveLedger, otBankBookings: world.otBankBookings, offboarding: world.leaveOffboarding,

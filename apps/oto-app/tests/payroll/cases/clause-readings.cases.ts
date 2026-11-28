@@ -23,6 +23,8 @@ import { fileURLToPath } from "node:url";
 import { describeSuite, test } from "../harness";
 import { createSeedData } from "../seed-world";
 import { calculateCompanyIncentives } from "../../../server/payroll/engine/company-awards";
+import { calculateCompanyMonthEnd } from "../../../server/payroll/engine/run-calculations";
+import { isBoothFlyer } from "../../../shared/booth-bonus";
 import { rulesFromReading, type ClauseRulePlan } from "../../../server/payroll/clause-rules";
 import { bonusParts, checkReading, parseReading, type ClauseReading } from "../../../shared/payroll-clause-reading";
 import type { CompanyIncentive, CompanyPayrollDocument } from "../../../server/payroll/engine/company-model";
@@ -109,6 +111,23 @@ function build() {
   return { doc, firstPlans, own };
 }
 
+test("two redeemed vouchers pay every named synthetic employee the full approved flyer rate", () => {
+  const {doc}=build();
+  const flyers=approved().filter(w=>w.reading.parts.every(isBoothFlyer));
+  const day=fixture.month+"-18";
+  doc.boothAwards=flyers.flatMap(w=>w.assignees!.flatMap(employeeId=>[1,2].map(n=>({
+    employeeId,voucherId:"demo-voucher-"+n,saleId:"demo-sale-"+n,stationId:"demo-booth",branchId:branchOf(employeeId),
+    issuedAt:day+"T01:00:00Z",usedAt:day+"T03:00:00Z",usedDay:day,window:"same-day" as const,
+    rateSatang:Math.round(w.reading.parts[0].bonus!.bahtPerUnit!*100),noClockIn:false,
+  }))));
+  const result=calculateCompanyMonthEnd(seed,doc,fixture.month);
+  for(const wording of flyers) for(const id of wording.assignees!) {
+    const allocations=result.entities.flatMap(e=>e.people.filter(person=>person.id===id).flatMap(person=>
+      person.lines.filter(line=>line.component==="incentive:booth-voucher").flatMap(line=>line.allocations.filter(a=>a.entityId===e.entityId))));
+    const total=allocations.reduce((sum,a)=>sum+a.amount,0);
+    assert.equal(total,2*wording.reading.parts[0].bonus!.bahtPerUnit!,`wording ${wording.n} pays both uses`);
+  }
+});
 test("the fixture holds the 14 wordings on the park's HR profiles, 17 people", () => {
   assert.equal(fixture.wordings.length, 14);
   assert.deepEqual(fixture.wordings.map((w) => w.n), Array.from({ length: 14 }, (_, i) => i + 1));
@@ -174,6 +193,10 @@ test("the payroll engine pays every approved reading exactly the pinned amounts 
     for (const assignee of w.assignees!) {
       const rules = own.get(`${w.n}|${assignee}`)!;
       got[assignee] = Math.round(awards.filter((a) => a.staffId === assignee && rules.has(a.ruleId)).reduce((n, a) => n + a.amount, 0) * 100) / 100;
+    }
+    if (w.reading.parts.every(isBoothFlyer)) {
+      assert.ok(Object.values(got).every(amount=>amount===0),"typed counts cannot pay the flyer a second time");
+      continue;
     }
     assert.deepEqual(got, w.amounts, `wording ${w.n}`);
   }

@@ -1486,7 +1486,7 @@ describe('D. H1: the POS reads OTO App events through otoapp_v only', () => {
         .filter(({ text }) => /\botoapp_v\b/.test(text))
         .map((f) => f.file)
         .sort(),
-    ).toEqual([DEPARTMENT_REPOSITORY, EMPLOYEE_REPOSITORY, REPOSITORY].sort());
+    ).toEqual(['services/otoapp-booth-bonus.ts', DEPARTMENT_REPOSITORY, EMPLOYEE_REPOSITORY, REPOSITORY].sort());
     const schemaDir = fileURLToPath(new URL('../../../packages/db/src/schema', import.meta.url));
     const events = appEventTables();
     for (const f of readdirSync(schemaDir).filter((n) => n.endsWith('.ts'))) {

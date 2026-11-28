@@ -33,6 +33,8 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
+28 November 2026, 20:32 Bangkok. SCRUM-1076, Payroll: 10 baht per redeemed booth voucher to each staff member named on it, counted from the booth and till records. The first-day cash and refund results match the raw booth and till records. The settings and two reports are pictured on Jira. Midnight expiry and the second effective date remain to verify on staging.
+
 28 November 2026, 20:31 Bangkok. SCRUM-1082 completed its main and staging checks, with four pictures attached. SCRUM-1061 reached main as a partial staging-tested improvement. It preserves private account states and asks the person to confirm receiving a code. The four no-send cases passed. Production sign-in remains pending.
 
 28 November 2026, 19:47 Bangkok. SCRUM-1082. All API groups, HR and the till passed at `2696de697`. All four tests in the corrected database migration file passed. Staging’s schema matched independently, and no non-test till sales were active. The next main run and automatic staging readback are due.

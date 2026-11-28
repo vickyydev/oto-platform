@@ -19,6 +19,7 @@ const sum = (lines: CompanyPayLine[], category: CompanyPayLine["category"]) => m
 export function companySourceSignature(data: PayrollWorld, doc: CompanyPayrollDocument, month: string): string {
   const source = JSON.stringify({
     engine: "company-payroll-source-evidence-v8",
+    ...(doc.boothAwards?.length ? {boothAwards:doc.boothAwards} : {}),
     profiles: Object.values(data.branches).flatMap(b => b.staff),
     incentiveAssignments: doc.incentiveAssignments, incentiveVersions: doc.incentiveVersions,
     branches: Object.values(data.branches).map(b => ({ details: b.detailsHistory, rules: b.rulesHistory, deductions: b.deductionRules })),
@@ -156,6 +157,16 @@ export function calculateCompanyEngine(data: PayrollWorld, doc: CompanyPayrollDo
     linesByPerson.get(s.id)!.push({ id: `incentive:${award.ruleId}:${award.rewardTrace?.version ?? 1}:${award.rewardTrace?.assignment.id ?? s.id}`, component: `incentive:${award.ruleId}`, label: award.name,
       category: "earning", amount: award.amount, formula: award.formula, inputs: [award.formula], sourceMonth: month,
       allocations: splitEarning(data, p, award.amount, dates.map(date => ({ date, weight: 1 }))), taxable: true, ssoWage: false, rewardTrace: award.rewardTrace });
+  }
+  for (const person of staff) {
+    const vouchers = (doc.boothAwards ?? []).filter(v => v.employeeId === person.id && v.usedDay.startsWith(month));
+    if (!vouchers.length) continue;
+    const amount = vouchers.reduce((sum,v) => sum+v.rateSatang,0)/100;
+    const slices = vouchers.flatMap(v => splitEarning(data,person.payrollProfile!,v.rateSatang/100,[{date:v.usedDay,weight:1}]));
+    linesByPerson.get(person.id)!.push({id:"booth-voucher:"+person.id,component:"incentive:booth-voucher",label:"Booth voucher bonus",
+      category:"earning", amount, formula:vouchers.length+" redeemed vouchers from the booth and till records",
+      inputs:vouchers.map(v=>v.voucherId+" · issued "+v.issuedAt+" · used "+v.usedAt+" · "+(v.rateSatang/100).toFixed(2)+" baht"+(v.noClockIn?" · check attendance":"")),
+      sourceMonth:month,allocations:slices,taxable:true,ssoWage:false});
   }
   for (const draft of Object.values(doc.runs).filter(r => r.month === month)) for (const manual of draft.manual) {
     if (!manual.reason.trim() || !Number.isFinite(manual.amount) || manual.amount < 0) throw new Error("Manual amounts require a positive amount and reason.");
