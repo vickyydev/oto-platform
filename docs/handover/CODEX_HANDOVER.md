@@ -1,3 +1,7 @@
+## Resume — 28 November 2026, 20:31 Bangkok
+
+Main CI was green at `d4e58398f`. All four staging screens opened and SCRUM-1082 is Deployed with screenshots. The next landing contains the staging-tested SCRUM-1061 form. Its no-send cases passed; per-number reasons and independent verification of delivery remain open. No production sign-in release. Next land the booth and payroll changes separately and keep the verified candidate serving for the real midnight exercise. Live HR remains a separate named release at 22:30 Bangkok.
+
 ## Resume — 28 November 2026, 19:47 Bangkok
 
 SCRUM-1082. The three API groups, HR and the till passed at `2696de697`. The remaining workspace failure is corrected by `42bd58e28`. All four affected tests passed and the three live database constraints match. Watch the next main run by full SHA, record Render’s ten served revisions, then open the four staging screens. The payroll candidate is deployed independently on staging, and the booth trial still needs the midnight boundary.
