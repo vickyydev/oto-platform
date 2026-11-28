@@ -79,6 +79,7 @@ import { TillRefusalNotice } from '@/components/till/RedeemVoucher';
 import { usePaymentStage, type PaymentSettlement } from '@/lib/usePaymentStage';
 import { cartBodyIdentity } from '@/lib/paymentScope';
 import { useTicketDisplay } from '@/lib/displaySession';
+import { guestLanguageChoice, guestLanguageFor, withGuestLanguage, type GuestLanguageChoice } from '@/lib/guestLanguage';
 import {
   phoneTillDisplayStage,
   phoneTillInlineDisplay,
@@ -646,6 +647,12 @@ export default function MobileTill() {
    */
   const [firstSaleKey] = useState(() => crypto.randomUUID());
   const saleKeyRef = useRef(firstSaleKey);
+  /**
+   * SCRUM-1077 — the language the guest chose in this sale on the paired
+   * display, under this sale's name, saved with the sale for the gate's
+   * messages (`lib/guestLanguage.ts`). The phone has no customer half of its own.
+   */
+  const [guestLanguage, setGuestLanguage] = useState<GuestLanguageChoice | null>(null);
 
   /**
    * S2-09a (SCRUM-203). The phone-held till writes to the same ledger, through
@@ -726,6 +733,7 @@ export default function MobileTill() {
     setCancelRefusal(null);
     saleEpochRef.current += 1;
     saleKeyRef.current = crypto.randomUUID();
+    setGuestLanguage(null);
     saleWriter.reset();
     setResumed(null);
     setCompletionRetry(null);
@@ -1815,11 +1823,13 @@ export default function MobileTill() {
     // platform's quote, which priced the code from the park's own definition
     // (`promoChargeSatang`). The counter till does the same.
     const promoCharge = promoChargeSatang(cart.quote, discounts);
-    return buildCartPayload(lines, discounts, manualDiscounts, cartIdentity, cart.quote.satang, {
+    const payload = buildCartPayload(lines, discounts, manualDiscounts, cartIdentity, cart.quote.satang, {
       mode: cart.quote.pricingMode,
       modeReason: cart.quote.pricingModeReason,
       ...(promoCharge !== undefined ? { expectedTotalSatang: promoCharge } : {}),
     });
+    // SCRUM-1077 — the guest's chosen language rides with the sale, never on a quote.
+    return withGuestLanguage(payload, guestLanguageFor(guestLanguage, saleKeyRef.current));
   };
 
   const unwritableReason = (): string =>
@@ -2300,6 +2310,11 @@ export default function MobileTill() {
     quoteRefreshing: cart.pending,
     payment: paymentDisplay, voucherPrize: null, nothingToPay: saleOwesNothing,
   }, answer => {
+    // SCRUM-1077 — the display shows its first screen only once the guest chose a language.
+    if ((answer.type === 'identify' || answer.type === 'skip_identify') && displayStage.step === 1) {
+      const chosen = guestLanguageChoice(saleKeyRef.current, answer.language);
+      if (chosen) setGuestLanguage(chosen);
+    }
     if (answer.type === 'identify' && displayStage.step === 1 && answer.phone !== undefined) {
       setCustomerPhone(answer.phone);
       if (answer.nickname !== undefined) setCustomerNickname(answer.nickname);

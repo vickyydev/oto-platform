@@ -981,6 +981,20 @@
       "when": 1795347873897,
       "tag": "0139_prebooking_messages",
       "breakpoints": true
+    },
+    {
+      "idx": 140,
+      "version": "7",
+      "when": 1795705468060,
+      "tag": "0140_gate_messages",
+      "breakpoints": true
+    },
+    {
+      "idx": 141,
+      "version": "7",
+      "when": 1795709338103,
+      "tag": "0141_sale_guest_language",
+      "breakpoints": true
     }
   ]
 }

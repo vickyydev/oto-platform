@@ -12,6 +12,7 @@ import { PhoneInput } from '@/components/shared/PhoneInput';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { CustomerLanguageChoice } from './CustomerLanguageChoice';
 import { useLanguage } from '@/i18n/LanguageContext';
+import type { SupportedLang } from '@/i18n/types';
 import { resolveName } from '@/i18n/resolveTranslation';
 import {
   computeLineBreakdown,
@@ -172,7 +173,8 @@ interface CustomerDisplayProps {
    * phone number, as every other caller has it.
    */
   chooseLanguage?: boolean;
-  onLanguageChosen?: () => void;
+  /** SCRUM-1077 — with the language pressed, so the till can save it with the sale. */
+  onLanguageChosen?: (lang: SupportedLang) => void;
 }
 
 function ChargeBanner({ target }: { target: ChargeTarget }) {

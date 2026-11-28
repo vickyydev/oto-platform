@@ -57,6 +57,8 @@ export const PERMISSION_WORDS: Record<Permission, string> = {
   'admin:booth:manage': 'Manage booth drafts, wheel designs, prizes, voucher types and campaigns.',
   'admin:booth:publish': 'Publish a configuration version for booths to use.',
   'admin:booth:staff_assign': 'Choose who is on each booth’s staff for the day, the name its slips print.',
+  'admin:gate_message:read': 'Read the words the gate readers show for each case and language at a park.',
+  'admin:gate_message:manage': 'Change the words the gate readers show for each case and language at a park; this never changes whether a gate opens.',
   'admin:health:read': 'Read platform health, failures and integration status.',
   'admin:ops:manage': 'Retry failed runs, acknowledge alerts and resolve operational expectations.',
   'console:alert:manage': 'Mute an alert for at most a day with a reason and keep the alert recipient list, while delivery stays on the console only.',

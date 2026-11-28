@@ -42,6 +42,7 @@ import { AppError } from '../lib/errors';
 import { usableSigningKeys } from '../lib/signing-keys';
 import { audit } from './audit';
 import { currentBandKey } from './bands';
+import { gateMessagesForBox } from './gate-messages';
 import { processRoles } from './jobs';
 import { recordRun, scrubDetail } from './ops';
 import {
@@ -1218,6 +1219,18 @@ export async function configBundle(db: Db, auth: BoxAuth, env?: Pick<Env, 'STAFF
   const role = await boxCacheRole(db, auth);
   const bandKey = role === 'counter' ? currentBandKey() : null;
 
+  /**
+   * SCRUM-1078 — the park's own gate wording, to a box that runs a gate, and
+   * only once the park has changed something: a park nobody has edited sends
+   * nothing, so its box keeps the built-in wording and this document — and its
+   * version — are exactly what they were before. A change in the Console moves
+   * `configVersion`, so the box pulls it on its next refresh, as a print
+   * template does. An older box ignores the field.
+   */
+  const gateMessages = stationRows.some((s) => s.kind === 'gate')
+    ? await gateMessagesForBox(db, branchRow.id)
+    : null;
+
   const body = {
     box: {
       id: auth.boxId,
@@ -1261,6 +1274,7 @@ export async function configBundle(db: Db, auth: BoxAuth, env?: Pick<Env, 'STAFF
     signingKeys,
     staffOfflineSignIn: env?.STAFF_OFFLINE_SIGN_IN ?? settings.staffOfflineSignIn,
     ...(bandKey ? { bandKey } : {}),
+    ...(gateMessages ? { gateMessages } : {}),
     heartbeatIntervalS: settings.heartbeatIntervalS,
     minSupportedAgentVersion: settings.minAgentVersion,
   };

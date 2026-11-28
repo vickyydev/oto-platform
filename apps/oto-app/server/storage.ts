@@ -1182,6 +1182,8 @@ export interface IStorage {
         // (the platform's job endpoint, S2-17b round 3); unset, every park
         // group, as the app's own timers run them.
         getStuckClockIns(hoursThreshold: number, tenantId?: string): Promise<EmployeePresence[]>;
+        closeStalePresenceMarkers(tenantId?: string): Promise<number>;
+        syncStuckClockInAlerts(stuck: EmployeePresence[], hours: number, tenantId?: string): Promise<{ created: number; updated: number; resolved: number }>;
         repairPresenceMismatches(tenantId?: string): Promise<{
                 mismatches: number;
                 repairs: number;
@@ -7042,6 +7044,59 @@ export class DatabaseStorage implements IStorage {
         // ============================================
         // RECONCILIATION HELPERS
         // ============================================
+
+        /**
+         * SCRUM-1074: the "currently clocked in" marker is switched off where a later clock-out is on
+         * record for that person (the midnight auto clock-out writes the event and left the marker on,
+         * so the same people were called stuck at every check). No clock record is changed.
+         */
+        async closeStalePresenceMarkers(tenantId?: string): Promise<number> {
+                const result = await db.execute(sql`
+                        update employee_presence p
+                        set is_clocked_in = false, last_out_at = s.out_at, last_event_at = s.out_at,
+                            last_event_type = 'OUT', current_work_branch_id = null, updated_at = now()
+                        from (select employee_id, max(event_time) as out_at from time_events where event_type = 'OUT' group by employee_id) s
+                        where p.employee_id = s.employee_id and p.is_clocked_in and p.last_in_at is not null and s.out_at > p.last_in_at
+                        ${tenantId ? sql`and p.tenant_id = ${tenantId}` : sql``}`);
+                return (result as { rowCount?: number | null }).rowCount ?? 0;
+        }
+
+        /**
+         * SCRUM-1074: one open "Stuck clock-in" alert per person. A check updates the alert it already
+         * raised instead of adding another, closes a repeat, and closes the alert of anybody who is no
+         * longer stuck. (These alerts carry no rule key, so the attention engine's own sweep leaves them.)
+         */
+        async syncStuckClockInAlerts(stuck: EmployeePresence[], hours: number, tenantId?: string): Promise<{ created: number; updated: number; resolved: number }> {
+                const open = await db
+                        .select({ id: attentionItems.id, employeeId: attentionItems.employeeId, description: attentionItems.description })
+                        .from(attentionItems)
+                        .where(and(
+                                eq(attentionItems.type, "TIMEKEEPING_STUCK_CLOCK_IN"),
+                                eq(attentionItems.status, "open"),
+                                sql`${attentionItems.title} like 'Stuck clock-in%'`,
+                                tenantId ? eq(attentionItems.tenantId, tenantId) : undefined,
+                        ))
+                        .orderBy(attentionItems.createdAt);
+                const byEmployee = new Map<string, typeof open>();
+                for (const item of open) if (item.employeeId) byEmployee.set(item.employeeId, [...(byEmployee.get(item.employeeId) ?? []), item]);
+                const close = (id: string) => db.update(attentionItems).set({ status: "resolved", resolvedAt: new Date(), updatedAt: new Date() }).where(eq(attentionItems.id, id));
+                let created = 0, updated = 0, resolved = 0;
+                const stuckIds = new Set(stuck.map((presence) => presence.employeeId));
+                for (const presence of stuck) {
+                        const description = `Employee has been clocked in for over ${hours} hours without clocking out. Last clock-in: ${presence.lastInAt?.toISOString() || "unknown"}`;
+                        const [first, ...repeats] = byEmployee.get(presence.employeeId) ?? [];
+                        if (!first) {
+                                await this.createAttentionItem({ tenantId: presence.tenantId, type: "TIMEKEEPING_STUCK_CLOCK_IN", severity: "high", employeeId: presence.employeeId,
+                                        branchId: presence.currentWorkBranchId || undefined, title: `Stuck clock-in: over ${hours} hours`, description });
+                                created++;
+                                continue;
+                        }
+                        if (first.description !== description) { await db.update(attentionItems).set({ description, updatedAt: new Date() }).where(eq(attentionItems.id, first.id)); updated++; }
+                        for (const repeat of repeats) { await close(repeat.id); resolved++; }
+                }
+                for (const item of open) if (item.employeeId && !stuckIds.has(item.employeeId)) { await close(item.id); resolved++; }
+                return { created, updated, resolved };
+        }
 
         async getStuckClockIns(
                 hoursThreshold: number,

@@ -1,5 +1,5 @@
 import {
-  Activity, BarChart3, Building2, CalendarCheck, FerrisWheel, HeartPulse,
+  Activity, BarChart3, Building2, CalendarCheck, DoorOpen, FerrisWheel, HeartPulse,
   Landmark, LayoutDashboard, LifeBuoy, MessagesSquare, Plug, Router, Shield, Ticket,
   TriangleAlert, Users, type LucideIcon,
 } from 'lucide-react';
@@ -178,6 +178,17 @@ export const CONSOLE_SECTIONS: ConsoleSection[] = [
     permission: 'admin:booth:read',
   },
   {
+    id: 'gate-messages',
+    path: '/devices/gate-messages',
+    label: 'Gate messages',
+    icon: DoorOpen,
+    description:
+      'The words the gate readers show for each case and language, with a preview of the reader’s screen.',
+    // SCRUM-1078: administrators only. Saving needs `admin:gate_message:manage`,
+    // checked on the page; wording never changes whether a gate opens.
+    permission: 'admin:gate_message:read',
+  },
+  {
     id: 'booth-report',
     path: '/reports/booths',
     label: 'Booth report',
@@ -293,7 +304,7 @@ export const consoleNav: ConsoleNavGroup[] = [
   {
     id: 'devices', label: 'Devices & places', icon: Router,
     description: 'Boxes, stations, devices, paired screens, kiosks and booths.',
-    gate: { any: ['admin:station:read'] }, sections: pages('devices', 'booths'),
+    gate: { any: ['admin:station:read'] }, sections: pages('devices', 'booths', 'gate-messages'),
   },
   {
     id: 'channels', label: 'Channels & assistant', icon: MessagesSquare,

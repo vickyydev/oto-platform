@@ -33,6 +33,8 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
+**28 November 2026.** The park handover has been reconciled with the service inventory. Administrator recovery is live on both servers. Its source reconciliation is the next landing. [Arrival checks](../progress/STATUS.md)
+
 **25 November 2026, Claude takeover.** The [handover guide](CLAUDE_TAKEOVER_2026-11-25.md) is the entry point for the next agent.
 
 **25 November 2026.** The [park operations checkpoint](../progress/PARK_CHECKPOINT_2026-11-25.md) identifies the current Jira status, environment, last verified outcome and next acceptance step across HR, payments, BEO, the staff tablet and gates. It includes the isolated production recovery release whose source PR remains open.

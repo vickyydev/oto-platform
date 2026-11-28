@@ -2099,7 +2099,7 @@ export interface paths {
         get: {
             parameters: {
                 query: {
-                    permission: "console:overview:read" | "console:analytics:read" | "console:analytics:manage_source" | "console:analytics:rerun" | "console:config:read" | "console:app_registry:read" | "console:app_registry:manage" | "console:release:read" | "console:release:flag_manage" | "console:release:kill_switch" | "console:integration:test" | "console:integration:manage" | "console:money:read" | "console:money:investigate" | "console:support:lookup" | "console:support:trace" | "console:support:impersonate" | "hr:salary:view" | "platform:operator:switch" | "admin:account:create" | "admin:account:read" | "admin:account:update" | "admin:role:read" | "admin:role:assign" | "admin:operator:create" | "admin:operator:read" | "admin:operator:update" | "admin:operator:all" | "admin:branch:create" | "admin:branch:read" | "admin:branch:update" | "admin:audit:read" | "admin:audit:read_sensitive" | "console:activity:export" | "admin:station:read" | "admin:station:create" | "admin:station:update" | "admin:station:archive" | "admin:box:read" | "admin:box:register" | "admin:box:update" | "admin:box:command" | "admin:box:archive" | "admin:device:read" | "admin:device:create" | "admin:device:update" | "admin:device:archive" | "admin:device:pair" | "admin:device:revoke" | "admin:booth:read" | "admin:booth:manage" | "admin:booth:publish" | "admin:booth:staff_assign" | "admin:health:read" | "admin:ops:manage" | "console:alert:manage" | "pos:member:read" | "pos:member:list" | "pos:member:create" | "pos:member:update" | "pos:member:tier_downgrade" | "pos:child:read" | "pos:child:create" | "pos:child:update" | "pos:visit:create" | "pos:visit:read" | "pos:visit:update" | "pos:booking:read" | "pos:booking:redeem" | "pos:station:takeover" | "pos:sale:read" | "pos:sale:create" | "pos:sale:update" | "pos:sale:discount" | "pos:sale:void" | "pos:payment:read" | "pos:payment:capture" | "pos:payment:confirm" | "pos:payment:void" | "pos:payment:settle" | "pos:refund:read" | "pos:refund:create" | "pos:refund:approve" | "pos:voucher:redeem" | "pos:voucher:issue_credit" | "pos:print:read" | "pos:print:receipt" | "pos:print:band" | "pos:print:voucher" | "pos:print:reprint" | "pos:cash:read" | "pos:cash:session_open" | "pos:cash:session_close" | "pos:cash:movement" | "pos:cash:approve" | "pos:cash:day_close" | "pos:checkin:read" | "pos:checkin:create" | "pos:checkin:update" | "pos:checkin:release" | "pos:checkin:guardian_manage" | "pos:event:read" | "pos:event:attendee_create" | "pos:event:pass_sell" | "pos:party:charge" | "pos:party:payment" | "pos:party:update" | "pos:party:kitchen_update" | "pos:event:checkin" | "admin:event_pricing:manage" | "pos:wallet:read" | "pos:wallet:grant" | "pos:wallet:spend" | "pos:wallet:adjust" | "pos:wallet:reactivate" | "pos:stock:read" | "pos:stock:adjust" | "pos:stock:transfer" | "pos:stock:count" | "pos:stock:receive" | "pos:stock:order" | "pos:stock:approve" | "catalog:package:read" | "catalog:package:create" | "catalog:package:update" | "catalog:holiday:read" | "catalog:holiday:manage" | "catalog:tax:read" | "catalog:tax:manage" | "catalog:menu:read" | "catalog:menu:manage" | "catalog:menu:import" | "pos:benefit:apply" | "admin:benefit:read" | "admin:benefit:manage" | "admin:benefit:credential_issue" | "analytics:read" | "inbox:conversation:read" | "inbox:conversation:reply" | "inbox:conversation:assign" | "inbox:conversation:move" | "inbox:conversation:handle" | "inbox:conversation:reopen" | "inbox:template:manage" | "inbox:channel:manage" | "inbox:dashboard:read" | "inbox:routing:manage" | "inbox:contact:erase" | "inbox:kb:manage" | "inbox:ai:manage" | "assistant:ask:use" | "assistant:log:review" | "app:pos:access" | "app:console:access" | "app:oto_app:access" | "app:radar:access" | "app:booth:access" | "app:inbox:access";
+                    permission: "console:overview:read" | "console:analytics:read" | "console:analytics:manage_source" | "console:analytics:rerun" | "console:config:read" | "console:app_registry:read" | "console:app_registry:manage" | "console:release:read" | "console:release:flag_manage" | "console:release:kill_switch" | "console:integration:test" | "console:integration:manage" | "console:money:read" | "console:money:investigate" | "console:support:lookup" | "console:support:trace" | "console:support:impersonate" | "hr:salary:view" | "platform:operator:switch" | "admin:account:create" | "admin:account:read" | "admin:account:update" | "admin:role:read" | "admin:role:assign" | "admin:operator:create" | "admin:operator:read" | "admin:operator:update" | "admin:operator:all" | "admin:branch:create" | "admin:branch:read" | "admin:branch:update" | "admin:audit:read" | "admin:audit:read_sensitive" | "console:activity:export" | "admin:station:read" | "admin:station:create" | "admin:station:update" | "admin:station:archive" | "admin:box:read" | "admin:box:register" | "admin:box:update" | "admin:box:command" | "admin:box:archive" | "admin:device:read" | "admin:device:create" | "admin:device:update" | "admin:device:archive" | "admin:device:pair" | "admin:device:revoke" | "admin:booth:read" | "admin:booth:manage" | "admin:booth:publish" | "admin:booth:staff_assign" | "admin:gate_message:read" | "admin:gate_message:manage" | "admin:health:read" | "admin:ops:manage" | "console:alert:manage" | "pos:member:read" | "pos:member:list" | "pos:member:create" | "pos:member:update" | "pos:member:tier_downgrade" | "pos:child:read" | "pos:child:create" | "pos:child:update" | "pos:visit:create" | "pos:visit:read" | "pos:visit:update" | "pos:booking:read" | "pos:booking:redeem" | "pos:station:takeover" | "pos:sale:read" | "pos:sale:create" | "pos:sale:update" | "pos:sale:discount" | "pos:sale:void" | "pos:payment:read" | "pos:payment:capture" | "pos:payment:confirm" | "pos:payment:void" | "pos:payment:settle" | "pos:refund:read" | "pos:refund:create" | "pos:refund:approve" | "pos:voucher:redeem" | "pos:voucher:issue_credit" | "pos:print:read" | "pos:print:receipt" | "pos:print:band" | "pos:print:voucher" | "pos:print:reprint" | "pos:cash:read" | "pos:cash:session_open" | "pos:cash:session_close" | "pos:cash:movement" | "pos:cash:approve" | "pos:cash:day_close" | "pos:checkin:read" | "pos:checkin:create" | "pos:checkin:update" | "pos:checkin:release" | "pos:checkin:guardian_manage" | "pos:event:read" | "pos:event:attendee_create" | "pos:event:pass_sell" | "pos:party:charge" | "pos:party:payment" | "pos:party:update" | "pos:party:kitchen_update" | "pos:event:checkin" | "admin:event_pricing:manage" | "pos:wallet:read" | "pos:wallet:grant" | "pos:wallet:spend" | "pos:wallet:adjust" | "pos:wallet:reactivate" | "pos:stock:read" | "pos:stock:adjust" | "pos:stock:transfer" | "pos:stock:count" | "pos:stock:receive" | "pos:stock:order" | "pos:stock:approve" | "catalog:package:read" | "catalog:package:create" | "catalog:package:update" | "catalog:holiday:read" | "catalog:holiday:manage" | "catalog:tax:read" | "catalog:tax:manage" | "catalog:menu:read" | "catalog:menu:manage" | "catalog:menu:import" | "pos:benefit:apply" | "admin:benefit:read" | "admin:benefit:manage" | "admin:benefit:credential_issue" | "analytics:read" | "inbox:conversation:read" | "inbox:conversation:reply" | "inbox:conversation:assign" | "inbox:conversation:move" | "inbox:conversation:handle" | "inbox:conversation:reopen" | "inbox:template:manage" | "inbox:channel:manage" | "inbox:dashboard:read" | "inbox:routing:manage" | "inbox:contact:erase" | "inbox:kb:manage" | "inbox:ai:manage" | "assistant:ask:use" | "assistant:log:review" | "app:pos:access" | "app:console:access" | "app:oto_app:access" | "app:radar:access" | "app:booth:access" | "app:inbox:access";
                 };
                 header?: never;
                 path?: never;
@@ -4395,6 +4395,8 @@ export interface paths {
                         promoCodes?: string[];
                         customerPhone?: string | null;
                         customerNickname?: string | null;
+                        /** @enum {string|null} */
+                        guestLanguage?: "en" | "zh" | "th" | "ru" | "fr" | null;
                         expectedTotalSatang?: number;
                         bandHolder?: {
                             /** Format: uuid */
@@ -4619,6 +4621,8 @@ export interface paths {
                         promoCodes?: string[];
                         customerPhone?: string | null;
                         customerNickname?: string | null;
+                        /** @enum {string|null} */
+                        guestLanguage?: "en" | "zh" | "th" | "ru" | "fr" | null;
                         expectedTotalSatang?: number;
                         bandHolder?: {
                             /** Format: uuid */
@@ -4780,6 +4784,8 @@ export interface paths {
                             promoCodes?: string[];
                             customerPhone?: string | null;
                             customerNickname?: string | null;
+                            /** @enum {string|null} */
+                            guestLanguage?: "en" | "zh" | "th" | "ru" | "fr" | null;
                             expectedTotalSatang?: number;
                             bandHolder?: {
                                 /** Format: uuid */
@@ -5280,6 +5286,8 @@ export interface paths {
                         promoCodes?: string[];
                         customerPhone?: string | null;
                         customerNickname?: string | null;
+                        /** @enum {string|null} */
+                        guestLanguage?: "en" | "zh" | "th" | "ru" | "fr" | null;
                         expectedTotalSatang?: number;
                         bandHolder?: {
                             /** Format: uuid */
@@ -15108,6 +15116,919 @@ export interface paths {
             };
         };
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/branches/{branchId}/gate-messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description What the gate readers at this park show for each case and language: the built-in wording with the park’s changes over it, the built-in wording itself, and the ordered languages shown. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    branchId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            branchId: string;
+                            texts: {
+                                languages: ("en" | "zh" | "th" | "ru" | "fr")[];
+                                cases: {
+                                    welcome: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    goodbye: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    NOT_A_BAND: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    BOX_NOT_READY: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    BAND_INVALID: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    BAND_UNKNOWN_OFFLINE: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    BAND_NOT_FOUND: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    KID_BAND: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    NO_GATE_ACCESS: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    BAND_REVOKED: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    ANTI_PASSBACK: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    OVER_TIME: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    GATE_BUSY: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    GATE_NOT_READY: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                };
+                                labels: {
+                                    brand: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    attention: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    adult: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    kid: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    until: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    left: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    comeBackBefore: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    ended: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    credit: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                };
+                            };
+                            defaults: {
+                                languages: ("en" | "zh" | "th" | "ru" | "fr")[];
+                                cases: {
+                                    welcome: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    goodbye: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    NOT_A_BAND: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    BOX_NOT_READY: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    BAND_INVALID: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    BAND_UNKNOWN_OFFLINE: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    BAND_NOT_FOUND: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    KID_BAND: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    NO_GATE_ACCESS: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    BAND_REVOKED: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    ANTI_PASSBACK: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    OVER_TIME: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    GATE_BUSY: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    GATE_NOT_READY: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                };
+                                labels: {
+                                    brand: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    attention: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    adult: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    kid: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    until: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    left: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    comeBackBefore: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    ended: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    credit: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                };
+                            };
+                            changed: number;
+                            updatedAt: string | null;
+                        };
+                    };
+                };
+            };
+        };
+        /** @description Make this park’s gate wording what the body says. Texts are cleaned (control characters other than line breaks removed) and limited to 200 characters, labels to 40; an entry equal to the built-in wording is not stored, so sending the default back resets it. Wording only: nothing here changes whether a gate opens. Audited as gate_message.update. */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    branchId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        languages: ("en" | "zh" | "th" | "ru" | "fr")[];
+                        cases?: {
+                            welcome: {
+                                en: string;
+                                zh: string;
+                                th: string;
+                                ru: string;
+                                fr: string;
+                            };
+                            goodbye: {
+                                en: string;
+                                zh: string;
+                                th: string;
+                                ru: string;
+                                fr: string;
+                            };
+                            NOT_A_BAND: {
+                                en: string;
+                                zh: string;
+                                th: string;
+                                ru: string;
+                                fr: string;
+                            };
+                            BOX_NOT_READY: {
+                                en: string;
+                                zh: string;
+                                th: string;
+                                ru: string;
+                                fr: string;
+                            };
+                            BAND_INVALID: {
+                                en: string;
+                                zh: string;
+                                th: string;
+                                ru: string;
+                                fr: string;
+                            };
+                            BAND_UNKNOWN_OFFLINE: {
+                                en: string;
+                                zh: string;
+                                th: string;
+                                ru: string;
+                                fr: string;
+                            };
+                            BAND_NOT_FOUND: {
+                                en: string;
+                                zh: string;
+                                th: string;
+                                ru: string;
+                                fr: string;
+                            };
+                            KID_BAND: {
+                                en: string;
+                                zh: string;
+                                th: string;
+                                ru: string;
+                                fr: string;
+                            };
+                            NO_GATE_ACCESS: {
+                                en: string;
+                                zh: string;
+                                th: string;
+                                ru: string;
+                                fr: string;
+                            };
+                            BAND_REVOKED: {
+                                en: string;
+                                zh: string;
+                                th: string;
+                                ru: string;
+                                fr: string;
+                            };
+                            ANTI_PASSBACK: {
+                                en: string;
+                                zh: string;
+                                th: string;
+                                ru: string;
+                                fr: string;
+                            };
+                            OVER_TIME: {
+                                en: string;
+                                zh: string;
+                                th: string;
+                                ru: string;
+                                fr: string;
+                            };
+                            GATE_BUSY: {
+                                en: string;
+                                zh: string;
+                                th: string;
+                                ru: string;
+                                fr: string;
+                            };
+                            GATE_NOT_READY: {
+                                en: string;
+                                zh: string;
+                                th: string;
+                                ru: string;
+                                fr: string;
+                            };
+                        };
+                        labels?: {
+                            brand: {
+                                en: string;
+                                zh: string;
+                                th: string;
+                                ru: string;
+                                fr: string;
+                            };
+                            attention: {
+                                en: string;
+                                zh: string;
+                                th: string;
+                                ru: string;
+                                fr: string;
+                            };
+                            adult: {
+                                en: string;
+                                zh: string;
+                                th: string;
+                                ru: string;
+                                fr: string;
+                            };
+                            kid: {
+                                en: string;
+                                zh: string;
+                                th: string;
+                                ru: string;
+                                fr: string;
+                            };
+                            until: {
+                                en: string;
+                                zh: string;
+                                th: string;
+                                ru: string;
+                                fr: string;
+                            };
+                            left: {
+                                en: string;
+                                zh: string;
+                                th: string;
+                                ru: string;
+                                fr: string;
+                            };
+                            comeBackBefore: {
+                                en: string;
+                                zh: string;
+                                th: string;
+                                ru: string;
+                                fr: string;
+                            };
+                            ended: {
+                                en: string;
+                                zh: string;
+                                th: string;
+                                ru: string;
+                                fr: string;
+                            };
+                            credit: {
+                                en: string;
+                                zh: string;
+                                th: string;
+                                ru: string;
+                                fr: string;
+                            };
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            branchId: string;
+                            texts: {
+                                languages: ("en" | "zh" | "th" | "ru" | "fr")[];
+                                cases: {
+                                    welcome: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    goodbye: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    NOT_A_BAND: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    BOX_NOT_READY: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    BAND_INVALID: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    BAND_UNKNOWN_OFFLINE: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    BAND_NOT_FOUND: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    KID_BAND: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    NO_GATE_ACCESS: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    BAND_REVOKED: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    ANTI_PASSBACK: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    OVER_TIME: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    GATE_BUSY: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    GATE_NOT_READY: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                };
+                                labels: {
+                                    brand: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    attention: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    adult: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    kid: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    until: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    left: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    comeBackBefore: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    ended: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    credit: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                };
+                            };
+                            defaults: {
+                                languages: ("en" | "zh" | "th" | "ru" | "fr")[];
+                                cases: {
+                                    welcome: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    goodbye: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    NOT_A_BAND: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    BOX_NOT_READY: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    BAND_INVALID: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    BAND_UNKNOWN_OFFLINE: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    BAND_NOT_FOUND: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    KID_BAND: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    NO_GATE_ACCESS: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    BAND_REVOKED: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    ANTI_PASSBACK: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    OVER_TIME: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    GATE_BUSY: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    GATE_NOT_READY: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                };
+                                labels: {
+                                    brand: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    attention: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    adult: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    kid: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    until: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    left: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    comeBackBefore: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    ended: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                    credit: {
+                                        en: string;
+                                        zh: string;
+                                        th: string;
+                                        ru: string;
+                                        fr: string;
+                                    };
+                                };
+                            };
+                            changed: number;
+                            updatedAt: string | null;
+                        };
+                    };
+                };
+            };
+        };
         post?: never;
         delete?: never;
         options?: never;

@@ -24,9 +24,12 @@ import { canViewHrSalary, HR_PAY_HIDDEN_NOTE } from "@shared/hr-salary-permissio
 import { PAYROLL_DISCOUNTS, PAYROLL_DISCOUNT_LABELS, type CompanyMonthInputs, type CompanyPerson, type MonthEndView, type MonthInputsView, type FeedsView, type PreviewView } from "@shared/payroll-month";
 import { ReasonDialog } from "@/components/payroll/reason-dialog";
 import {
-  errorText, money, monthLabel, payrollCall, refreshPayroll, useFeeds, useMonthEnd, useMonthInputs, usePayrollSetup, usePreview, withBranchNames,
+  CLAUSES_PATH, errorText, money, monthLabel, payrollCall, refreshPayroll, useFeeds, useMonthEnd, useMonthInputs, usePayrollSetup, usePreview, withBranchNames,
 } from "@/lib/payroll/api";
+import { fixHint, plainExclusion, type MonthTab } from "@/lib/payroll/fix-hints";
 import { Field, NumberInput } from "@/pages/payroll-setup-page";
+import { ClauseMark } from "@/components/payroll/clause-mark";
+import { CLAUSE_STATE_LABEL, type ClauseMonthMark } from "@shared/payroll-clause-reading";
 
 const selectClass = "h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 const thisMonth = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok", year: "numeric", month: "2-digit" }).format(new Date()).slice(0, 7);
@@ -44,6 +47,24 @@ const STATUS_LABEL: Record<string, string> = { draft: "Draft", "gm-confirmed": "
 /** A run's inputs change while it is a draft or GM confirmed; a locked or paid version takes none until the Owner reopens it. */
 const editable = (view: MonthEndView) => !!view.run && (view.run.status === "draft" || view.run.status === "gm-confirmed");
 const when = (iso: string) => new Date(iso).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
+
+/**
+ * SCRUM-1075: who has a bonus from a contract clause, and how much the payroll engine calculated for it this
+ * month (the person's lines of the rules their approved reading pays from), for the orange mark.
+ */
+function clauseOf(preview: PreviewView | undefined) {
+  const marks = new Map((preview?.clauseMarks ?? []).map((m) => [m.employeeId, m]));
+  const components = (m: ClauseMonthMark | undefined) => new Set((m?.ruleIds ?? []).map((id) => `incentive:${id}`));
+  return {
+    mark: (id: string) => marks.get(id),
+    components: (id: string) => components(marks.get(id)),
+    amount: (person: CompanyPerson) => {
+      const own = components(marks.get(person.id));
+      return Math.round(person.lines.filter((l) => own.has(l.component)).reduce((n, l) => n + l.amount, 0) * 100) / 100;
+    },
+  };
+}
+const unpaidStates = new Set(["not-read", "waiting"]);
 
 export default function PayrollMonthEndPage() {
   const { user } = useAuth();
@@ -81,6 +102,9 @@ const MONTH_TABS = ["attendance", "inputs", "adjustments", "feeds", "preview", "
 function MonthTabs({ entityId, month, initialTab }: { entityId: string; month: string; initialTab: string | null }) {
   const [tab, setTab] = useState<string>(() => MONTH_TABS.find((t) => t === initialTab) ?? "attendance");
   const view = useMonthEnd(entityId, month);
+  const setup = usePayrollSetup();
+  // SCRUM-1073: with no deduction rule saved, late, early and no-show change nothing; the attendance tab says so.
+  const noDeductionRules = !!setup.data && !setup.data.deductionLists.some((list) => list.rules.length > 0);
   return <Tabs value={tab} onValueChange={setTab} className="space-y-4">
     <TabsList className="flex h-auto flex-wrap justify-start">
       <TabsTrigger value="attendance">1. Attendance</TabsTrigger>
@@ -94,11 +118,11 @@ function MonthTabs({ entityId, month, initialTab }: { entityId: string; month: s
     {view.error && <Empty>{errorText(view.error)}</Empty>}
     {view.data && <>
       <RunBanner view={view.data} />
-      <TabsContent value="attendance"><AttendanceTab view={view.data} /></TabsContent>
+      <TabsContent value="attendance"><AttendanceTab view={view.data} noDeductionRules={noDeductionRules} /></TabsContent>
       <TabsContent value="inputs"><InputsTab month={month} /></TabsContent>
       <TabsContent value="adjustments"><AdjustmentsTab view={view.data} /></TabsContent>
       <TabsContent value="feeds"><FeedsTab month={month} /></TabsContent>
-      <TabsContent value="preview"><PreviewTab view={view.data} entityId={entityId} month={month} active={tab === "preview"} /></TabsContent>
+      <TabsContent value="preview"><PreviewTab view={view.data} entityId={entityId} month={month} active={tab === "preview"} onOpenTab={setTab} /></TabsContent>
       <TabsContent value="approvals"><ApprovalsTab view={view.data} active={tab === "approvals"} /></TabsContent>
     </>}
   </Tabs>;
@@ -118,8 +142,8 @@ function RunBanner({ view }: { view: MonthEndView }) {
         {view.canManage && <Button size="sm" onClick={() => setOpen(true)} data-testid="button-start-run">Start the {monthLabel(view.month)} run</Button>}
       </div>}
     {view.excluded.length > 0 && <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm">
-      <p className="flex items-center gap-2 font-semibold text-destructive"><AlertTriangle className="h-4 w-4" />{view.excluded.length} {view.excluded.length === 1 ? "person is" : "people are"} not in this month's payroll yet</p>
-      <ul className="mt-1 list-disc pl-6 text-xs">{view.excluded.map((x) => <li key={x.employeeId}><Link href={`/payroll/people/${x.employeeId}`} className="underline">{x.name}</Link>: {x.reason}</li>)}</ul>
+      <p className="flex items-center gap-2 font-semibold text-destructive"><AlertTriangle className="h-4 w-4" />{view.excluded.length} {view.excluded.length === 1 ? "person has" : "people have"} pay left out of this month</p>
+      <ul className="mt-1 list-disc pl-6 text-xs">{view.excluded.map((x) => <li key={x.employeeId}><Link href={`/payroll/people/${x.employeeId}`} className="underline">{x.name}</Link>: {plainExclusion(x.reason).join(" ")}</li>)}</ul>
     </div>}
     {view.run && !editable(view) && <p className="flex items-center gap-2 rounded-lg border border-sky-500/40 bg-sky-500/10 px-3 py-2 text-sm"><LockKeyhole className="h-4 w-4" />
       Version {view.run.version} is {view.run.status === "paid" ? "locked and paid" : "locked"}. These amounts will not change; the Owner reopens the month into a new version to correct anything.</p>}
@@ -133,8 +157,10 @@ function RunBanner({ view }: { view: MonthEndView }) {
 // ─── 1. Attendance ───────────────────────────────────────────────────────────
 
 type Day = MonthEndView["attendance"][number];
-function AttendanceTab({ view }: { view: MonthEndView }) {
+function AttendanceTab({ view, noDeductionRules }: { view: MonthEndView; noDeductionRules: boolean }) {
   const [all, setAll] = useState(false);
+  const [bulk, setBulk] = useState(false);
+  const [starting, setStarting] = useState(false);
   const [review, setReview] = useState<{ day: Day; action: "confirm" | "override" | "excuse"; clockIn: string; clockOut: string } | null>(null);
   const [ot, setOt] = useState<{ day: Day; outcome: "Pay" | "Bank" | "Reject"; choice: boolean } | null>(null);
   const [undo, setUndo] = useState<MonthEndView["overtime"][number] | null>(null);
@@ -146,7 +172,20 @@ function AttendanceTab({ view }: { view: MonthEndView }) {
   return <Section title="Attendance review" description="From the punch clock, the rota and the timekeeping reviews managers already made. A decision here is saved against this run only — the attendance record itself never changes."
     action={<Button size="sm" variant="outline" onClick={() => setAll(!all)}>{all ? "Only days to review" : "Show every day"}</Button>}>
     <p className="flex items-center gap-2 text-sm">{waiting ? <CircleDashed className="h-4 w-4 text-amber-600" /> : <CheckCircle2 className="h-4 w-4 text-emerald-600" />}
-      {waiting ? `${waiting} day${waiting === 1 ? "" : "s"} still to confirm` : "No unconfirmed attendance"}</p>
+      {waiting ? `${waiting} day${waiting === 1 ? "" : "s"} still to confirm` : "No unconfirmed attendance"}
+      {canEdit && waiting > 0 && <Button size="sm" className="ml-2" onClick={() => setBulk(true)} data-testid="button-confirm-all">Confirm all {waiting} remaining</Button>}</p>
+    {waiting > 0 && !view.run && <div className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm" data-testid="attendance-start-first">
+      <span className="flex-1">These days can be confirmed once the month's run is started. Start it, then press Confirm all remaining.</span>
+      {view.canManage && <Button size="sm" onClick={() => setStarting(true)} data-testid="button-start-run-attendance">Start the {monthLabel(view.month)} run</Button>}</div>}
+    {starting && <ReasonDialog open onOpenChange={setStarting} title={`Start the ${monthLabel(view.month)} run`} confirmLabel="Start run"
+      description={`Version 1, in draft, paid on day ${view.entity.defaultPayDay} (the company's default pay day). After this, the Confirm all remaining button appears here.`}
+      onConfirm={async (reason) => { await payrollCall("POST", `/api/payroll/month-end/${view.entity.id}/${view.month}/run`, { reason }); await refreshPayroll(); }} />}
+    {waiting > 0 && view.run && <p className="text-xs text-muted-foreground">First decide, one by one, any day that needs its times corrected (Override) or forgiven (Excuse). Then confirm the rest in one step.</p>}
+    {noDeductionRules && <p role="note" className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2 text-xs" data-testid="note-no-deduction-rules"><Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+      <span>No attendance deduction rule is saved, so late, early departure and no-show do not change anyone's pay yet. The rules are entered in <Link href="/payroll/setup" className="underline">Payroll Setup</Link>, under Deduction rules.</span></p>}
+    {bulk && <ReasonDialog open onOpenChange={setBulk} title={`Confirm all ${waiting} remaining days`} confirmLabel={`Confirm ${waiting} days`}
+      description="Saves Confirm on every day still waiting: the issues count as the clock recorded them, and overtime on those days is paid unless you reject it. Days you already decided stay as they are."
+      onConfirm={async (reason) => { await payrollCall("POST", `/api/payroll/month-end/${view.entity.id}/${view.month}/attendance-confirm-all`, { reason }); await refreshPayroll(); }} />}
     {!days.length ? <Empty>{all ? "No attendance recorded this month." : "Nothing to review."}</Empty> :
       <div className="overflow-x-auto"><table className="w-full min-w-[820px] text-sm">
         <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground"><tr><th className="py-1">Person</th><th>Date</th><th>Rota</th><th>Clocked</th><th>Approved</th><th>Issues</th><th>This run</th><th>Overtime</th><th /></tr></thead>
@@ -161,7 +200,7 @@ function AttendanceTab({ view }: { view: MonthEndView }) {
           <td>{d.overtimeHours > 0 ? (decisionOf(d) ? <span className="inline-flex items-center gap-1" title={decisionOf(d)!.reason}>
             <Badge variant={decisionOf(d)!.outcome === "Reject" ? "secondary" : "outline"}>{decisionOf(d)!.outcome} {d.overtimeHours}h</Badge>
             {canEdit && <Button size="sm" variant="ghost" aria-label="Remove the overtime decision" onClick={() => setUndo(decisionOf(d)!)}><Trash2 className="h-3.5 w-3.5" /></Button>}</span>
-            : canEdit ? <Button size="sm" variant="outline" onClick={() => setOt({ day: d, outcome: "Pay", choice: false })} data-testid={`button-overtime-${d.id}`}>{d.overtimeHours}h: decide</Button>
+            : canEdit ? <Button size="sm" variant="outline" onClick={() => setOt({ day: d, outcome: "Pay", choice: false })} data-testid={`button-overtime-${d.id}`}>{d.overtimeHours}h: {d.review?.action === "confirm" ? "paid · change" : "decide"}</Button>
             : <span className="text-xs text-muted-foreground">{d.overtimeHours}h undecided</span>) : "—"}</td>
           <td className="text-right">{canEdit && <Button size="sm" variant="ghost" onClick={() => setReview({ day: d, action: "confirm", clockIn: d.effectiveClockIn ?? d.actualClockIn ?? "", clockOut: d.effectiveClockOut ?? d.actualClockOut ?? "" })}><PenLine className="mr-1 h-4 w-4" />Decide</Button>}</td>
         </tr>)}</tbody>
@@ -183,7 +222,7 @@ function AttendanceTab({ view }: { view: MonthEndView }) {
       </div>
     </ReasonDialog>}
     {ot && <ReasonDialog open onOpenChange={(o) => !o && setOt(null)} title={`Overtime · ${ot.day.name} · ${ot.day.date} · ${ot.day.overtimeHours}h`} confirmLabel="Save decision"
-      description="Pay adds the hours to this month's pay. Reject pays nothing for them. Bank takes them out of this month's pay to be taken as time off."
+      description="Pay adds the hours to this month's pay. Reject pays nothing for them. Bank takes them out of this month's pay to be taken as time off. A day you confirmed already pays its overtime: choose Reject to refuse it. The saved overtime policy sets the smallest block that is paid and how the hours are rounded."
       onConfirm={async (reason) => {
         await payrollCall("PUT", `/api/payroll/month-end/${view.entity.id}/${view.month}/overtime/${encodeURIComponent(ot.day.id)}`, { outcome: ot.outcome, reason, employeeChoiceConfirmed: ot.choice });
         await refreshPayroll();
@@ -246,7 +285,8 @@ function SalesSection({ view }: { view: MonthInputsView }) {
     {dialog && <ReasonDialog open onOpenChange={(o) => !o && setDialog(null)} title={`${view.branches.find((b) => b.id === dialog.branchId)?.name} · ${monthLabel(dialog.month)} sales`}
       description="Gross per stream, then the VAT and the service charge inside it. The reason should say where the figures came from."
       onConfirm={async (reason) => {
-        const streams = Object.fromEntries(Object.entries(dialog.streams).filter(([, c]) => c.amount || c.vat || c.serviceCharge));
+        // SCRUM-1073: a branch that sold nothing is saved as zeros, so every stream is sent as typed.
+        const streams = dialog.streams;
         await payrollCall("PUT", `/api/payroll/inputs/${dialog.month}/revenue/${dialog.branchId}`, { streams, discounts: dialog.discounts, reason });
         await refreshPayroll();
       }}>
@@ -346,6 +386,7 @@ function AdjustmentsTab({ view }: { view: MonthEndView }) {
   const base = `/api/payroll/month-end/${view.entity.id}/${view.month}`;
   const can = view.canManage && editable(view);
   return <div className="space-y-4">
+    <ClauseIncentives view={view} />
     {!view.run && <Empty>Start the month's run to add one-off bonuses, deductions or overrides.</Empty>}
     <Section title="One-off bonuses and deductions" description="Only for things no system provides. The reason is shown on the payslip."
       action={can && <div className="flex gap-2"><Button size="sm" onClick={() => setAdd({ kind: "bonus", employeeId: view.people[0]?.id ?? "", amount: 0 })}><Plus className="mr-1 h-4 w-4" />Add bonus</Button>
@@ -383,6 +424,39 @@ function AdjustmentsTab({ view }: { view: MonthEndView }) {
     {remove && <ReasonDialog open onOpenChange={(o) => !o && setRemove(null)} title={`Remove the ${remove.label}?`} confirmLabel="Remove"
       onConfirm={async (reason) => { await payrollCall("POST", remove.path, { reason }); await refreshPayroll(); }} />}
   </div>;
+}
+
+/**
+ * SCRUM-1075 (the owner's approval message): every person with a bonus read from their contract clause, with
+ * the clause, the approved reading and what the payroll engine calculated for it this month, each with the
+ * orange mark; readings still waiting are listed as not paid, with the way to the review screen.
+ */
+function ClauseIncentives({ view }: { view: MonthEndView }) {
+  const preview = usePreview(view.entity.id, view.month, true);
+  const clause = clauseOf(preview.data);
+  const paid = new Map((preview.data?.result?.people ?? []).map((p) => [p.id, p]));
+  const onPayroll = new Set(view.people.map((p) => p.id));
+  const marks = (preview.data?.clauseMarks ?? []).filter((m) => m.state !== "not-incentive" && (paid.has(m.employeeId) || (onPayroll.has(m.employeeId) && unpaidStates.has(m.state))));
+  const name = (id: string) => paid.get(id)?.name ?? view.people.find((p) => p.id === id)?.name ?? id;
+  const total = Math.round(marks.reduce((n, m) => n + (paid.has(m.employeeId) ? clause.amount(paid.get(m.employeeId)!) : 0), 0) * 100) / 100;
+  return <Section title="Bonuses read from contract clauses" description="From the incentive clause on each person's HR profile: read by AI once, approved by a payroll manager or admin, then calculated by the payroll engine. A reading still waiting for approval is not paid."
+    action={<Link href={CLAUSES_PATH} className="inline-flex h-9 items-center rounded-md border px-3 text-xs font-semibold hover:bg-muted" data-testid="link-review-clauses">Review the readings</Link>}>
+    {preview.isLoading && <Skeleton className="h-16 w-full" />}
+    {preview.error != null && <p className="text-xs text-destructive">{errorText(preview.error)}</p>}
+    {preview.data && !marks.length && <Empty>No one paid this month has an incentive clause.</Empty>}
+    {marks.length > 0 && <ul className="divide-y rounded-lg border text-sm" data-testid="clause-incentives">{marks.map((m) => {
+      const person = paid.get(m.employeeId), amount = person ? clause.amount(person) : 0, pays = m.ruleIds.length > 0;
+      return <li key={m.employeeId} className="flex flex-wrap items-start gap-2 px-3 py-2" data-testid={`clause-incentive-${m.employeeId}`}>
+        <ClauseMark title={`Bonus read from the contract clause: ${CLAUSE_STATE_LABEL[m.state]}`} />
+        <span className="min-w-[14rem] flex-1"><strong>{name(m.employeeId)}</strong> <Badge variant="outline" className="ml-1 border-orange-500/50 text-orange-800 dark:text-orange-300">{CLAUSE_STATE_LABEL[m.state]}</Badge>
+          <span className="block text-xs italic text-muted-foreground">&ldquo;{m.clauseText}&rdquo;</span>
+          {m.summary && <span className="block text-xs">{pays ? "Approved reading" : "Reading"}: {m.summary}</span>}</span>
+        <span className="w-44 text-right" data-testid="clause-incentive-amount">{pays
+          ? <><span className="font-semibold tabular-nums text-orange-700 dark:text-orange-300">{person ? money(amount) : "—"}</span><span className="block text-[11px] text-muted-foreground">{person ? `calculated for ${monthLabel(view.month)}` : "not in this company's month"}</span></>
+          : <><span className="font-semibold text-orange-700 dark:text-orange-300">Not paid yet</span><span className="block text-[11px] text-muted-foreground">waiting for approval</span></>}</span>
+      </li>; })}
+      <li className="flex justify-between px-3 py-2 font-semibold"><span>Contract bonuses calculated for {monthLabel(view.month)}</span><span className="tabular-nums" data-testid="clause-incentives-total">{money(total)}</span></li></ul>}
+  </Section>;
 }
 
 // ─── Leave, OT bank and exits ────────────────────────────────────────────────
@@ -463,7 +537,7 @@ function FeedsTab({ month }: { month: string }) {
 
 const THIRD_PARTY = /third|someone else/i;
 
-function PreviewTab({ view, entityId, month, active }: { view: MonthEndView; entityId: string; month: string; active: boolean }) {
+function PreviewTab({ view, entityId, month, active, onOpenTab }: { view: MonthEndView; entityId: string; month: string; active: boolean; onOpenTab: (tab: MonthTab) => void }) {
   const preview = usePreview(entityId, month, active);
   const [show, setShow] = useState<"people" | "problems">("people");
   const [open, setOpen] = useState<string | null>(null);
@@ -472,11 +546,19 @@ function PreviewTab({ view, entityId, month, active }: { view: MonthEndView; ent
   // Engine messages and formulas carry branch and person ids: both are shown as names.
   const names = useMemo(() => ({ ...Object.fromEntries(view.people.map((p) => [p.id, p.name])), ...(preview.data?.branchNames ?? {}) }), [view.people, preview.data]);
   const problems = useMemo(() => (result?.exceptions ?? []).filter((e) => e.severity !== "info"), [result]);
+  const clause = clauseOf(preview.data);
   if (preview.isLoading) return <Skeleton className="h-64 w-full" />;
-  if (preview.error) return <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm"><p className="font-semibold">The month cannot be calculated yet</p><p>{errorText(preview.error)}</p></div>;
+  if (preview.error) return <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm"><p className="font-semibold">The month cannot be calculated yet</p><p>{errorText(preview.error)}</p>
+    {fixHint(errorText(preview.error)).text && <p className="mt-1 text-xs">How to fix: {fixHint(errorText(preview.error)).text}</p>}</div>;
   if (!preview.data) return null;
   const { calculation, signature, timing, frozen } = preview.data;
   const blocking = problems.filter((e) => e.severity === "blocking").length;
+  // SCRUM-1073: the unconfirmed days are one line with one way out, not one line per day.
+  const waitingDays = problems.filter((e) => e.kind === "attendance");
+  const listed: typeof problems = [
+    ...(waitingDays.length ? [{ id: "attendance-all", kind: "attendance", severity: "blocking" as const, message: `${waitingDays.length} attendance day${waitingDays.length === 1 ? " is" : "s are"} not confirmed` }] : []),
+    ...problems.filter((e) => e.kind !== "attendance"),
+  ];
   const approved = (id?: string) => !!id && view.thirdParty.some((a) => a.employeeId === id && a.current);
   return <div className="space-y-4">
     <p className="text-xs text-muted-foreground">{frozen
@@ -497,20 +579,28 @@ function PreviewTab({ view, entityId, month, active }: { view: MonthEndView; ent
           <tr>
             <td className="py-2 font-medium"><button type="button" className="inline-flex items-center gap-1 text-left hover:underline" aria-expanded={open === p.id}
               onClick={() => setOpen(open === p.id ? null : p.id)} data-testid={`person-${p.id}`}>
-              {open === p.id ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}{p.name}</button></td>
+              {open === p.id ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}{p.name}</button>
+              {(() => { const m = clause.mark(p.id); if (!m || m.state === "not-incentive") return null; const amount = clause.amount(p);
+                return <span className="ml-2 inline-flex items-center gap-1 align-middle text-xs font-semibold text-orange-700 dark:text-orange-300" data-testid={`clause-amount-${p.id}`}>
+                  <ClauseMark title={`Bonus read from the contract clause: ${CLAUSE_STATE_LABEL[m.state]}`} />
+                  {m.ruleIds.length ? `contract bonus ${money(amount)}` : "contract clause not paid yet"}</span>; })()}</td>
             <td className="text-muted-foreground">{p.jobTitle}</td><td className="text-xs">{withBranchNames(p.allocationBadge, names)}</td>
             <td className="text-right tabular-nums">{p.daysWorked}/{p.employedDays}</td><td className="text-right tabular-nums">{money(p.gross)}</td>
             <td className="text-right tabular-nums">{money(p.deductions)}</td><td className="text-right font-semibold tabular-nums">{money(p.net)}</td><td className="text-right tabular-nums">{money(p.employer)}</td>
           </tr>
-          {open === p.id && <tr><td colSpan={8} className="bg-muted/30 px-3 py-3"><PersonLines person={p} names={names} /></td></tr>}
+          {open === p.id && <tr><td colSpan={8} className="bg-muted/30 px-3 py-3"><PersonLines person={p} names={names} clauseComponents={clause.components(p.id)} /></td></tr>}
         </Fragment>)}</tbody>
       </table></div> :
-        <ul className="divide-y rounded-lg border text-sm" data-testid="problems-list">{problems.map((e) => <li key={e.id} className="flex flex-wrap items-start gap-2 px-3 py-2">
-          <Badge variant={e.severity === "blocking" ? "destructive" : "outline"}>{e.severity}</Badge><span className="flex-1">{withBranchNames(e.message, names)}</span>
+        <ul className="divide-y rounded-lg border text-sm" data-testid="problems-list">{listed.map((e) => { const hint = fixHint(e.message, e.staffId); return <li key={e.id} className="flex flex-wrap items-start gap-2 px-3 py-2">
+          <Badge variant={e.severity === "blocking" ? "destructive" : "outline"}>{e.severity}</Badge>
+          <span className="flex-1">{withBranchNames(e.message, names)}
+            {hint.text && <span className="mt-0.5 block text-xs text-muted-foreground" data-testid="problem-fix">How to fix: {hint.text}</span>}</span>
+          {hint.tab ? <Button size="sm" variant="outline" onClick={() => onOpenTab(hint.tab!)}>{hint.label}</Button>
+            : hint.href ? <Link href={hint.href} className="inline-flex h-9 items-center rounded-md border px-3 text-xs font-semibold hover:bg-muted">{hint.label}</Link> : null}
           {THIRD_PARTY.test(`${e.kind} ${e.message}`) && e.staffId && (approved(e.staffId)
             ? <Badge variant="secondary">Approved</Badge>
             : view.canManage && editable(view) && !frozen && <Button size="sm" variant="outline" onClick={() => setApprove({ employeeId: e.staffId!, name: result.people.find((p) => p.id === e.staffId)?.name ?? "" })}>Approve this payment</Button>)}
-        </li>)}
+        </li>; })}
           {!problems.length && <li className="px-3 py-4 text-center text-muted-foreground">No problems.</li>}</ul>}
       <Section title="Service charge" description="Each branch's pool from last month's sales, shared by the saved policy.">
         <ul className="divide-y text-sm">{calculation.service.map((s) => <li key={s.branchId} className="flex flex-wrap gap-3 py-1.5">
@@ -525,13 +615,13 @@ function PreviewTab({ view, entityId, month, active }: { view: MonthEndView; ent
 }
 
 /** One person's pay, line by line, as the payslip will show it. */
-function PersonLines({ person, names }: { person: CompanyPerson; names?: Record<string, string> }) {
+function PersonLines({ person, names, clauseComponents }: { person: CompanyPerson; names?: Record<string, string>; clauseComponents?: Set<string> }) {
   const group = (category: "earning" | "deduction" | "employer", title: string) => {
     const lines = person.lines.filter((l) => l.category === category && l.amount !== 0);
     if (!lines.length) return null;
     return <div><p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
       <ul className="divide-y rounded-md border bg-background">{lines.map((l) => <li key={l.id} className="flex flex-wrap items-start gap-2 px-2 py-1.5 text-xs">
-        <span className="min-w-[10rem] flex-1"><span className="font-medium">{withBranchNames(l.label, names)}</span>{l.overridden && <Badge variant="outline" className="ml-1">Overridden</Badge>}
+        <span className="min-w-[10rem] flex-1">{clauseComponents?.has(l.component) && <span className="mr-1 inline-flex align-middle"><ClauseMark title="From the contract clause, approved reading" /></span>}<span className="font-medium">{withBranchNames(l.label, names)}</span>{l.overridden && <Badge variant="outline" className="ml-1">Overridden</Badge>}
           <span className="block text-muted-foreground">{withBranchNames(l.formula, names)}</span></span>
         <span className="text-muted-foreground">{l.allocations.map((a) => `${names?.[a.costCentre] ?? (a.costCentre === "owner-non-operational" ? "Owner – non-operational" : a.costCentre)} ${money(a.amount)}`).join(" · ")}</span>
         <span className="w-28 text-right font-semibold tabular-nums">{category === "deduction" ? `−${money(l.amount)}` : money(l.amount)}</span></li>)}</ul></div>;
@@ -572,7 +662,7 @@ function ApprovalsTab({ view, active }: { view: MonthEndView; active: boolean })
     <ol className="grid grid-cols-2 gap-2 sm:grid-cols-4">{steps.map(([s, l], i) => <li key={s} className={`rounded-lg border p-3 text-sm ${i <= idx ? "border-primary bg-primary/10 font-semibold" : "text-muted-foreground"}`}>{i + 1}. {l}</li>)}</ol>
     <div className="space-y-1 text-sm">
       <p>Version {view.run.version}{view.run.gm ? ` · GM: ${view.run.gm.name}` : ""}{view.run.owner ? ` · Owner: ${view.run.owner.name}` : ""}</p>
-      {blockers.length > 0 && status !== "locked" && status !== "paid" && <p className="text-destructive"><Badge variant="destructive">{blockers.length} blockers</Badge> Lock is refused until every blocking exception is resolved.</p>}
+      {blockers.length > 0 && status !== "locked" && status !== "paid" && <p className="text-destructive"><Badge variant="destructive">{blockers.length} blockers</Badge> Lock is refused until every blocking problem is resolved. Open Check the month and press the blocking count: each line says how to fix it.</p>}
       {stale && <p className="text-destructive"><Badge variant="destructive">Stale</Badge> Source data changed since GM confirmation (signature mismatch). GM must confirm again.</p>}
       {preview.isLoading && <p className="text-xs text-muted-foreground">Checking the month…</p>}
       {preview.error != null && <p className="text-xs text-destructive">{errorText(preview.error)}</p>}

@@ -1,4 +1,4 @@
-**25 November 2026, outstanding park checks.** The BEO PromptPay deposit passed with real money. Real guest WhatsApp delivery, the Radar payment event, automatic EDC card payment, physical kitchen printing and gate passage/headcount still need verification. For production HR, confirm the transferred employee's first sign-in and the administrator's own reset SMS delivery. The [checkpoint](PARK_CHECKPOINT_2026-11-25.md) links the relevant tickets and plans.
+**25 November 2026, outstanding park checks.** The BEO PromptPay deposit passed with real money. Real guest WhatsApp delivery, the Radar payment event, automatic EDC card payment, physical kitchen printing and gate passage/headcount still need verification. For production HR, confirm the affected staff member's first sign-in and the administrator's own reset SMS delivery. The [checkpoint](PARK_CHECKPOINT_2026-11-25.md) links the relevant tickets and plans.
 
 **23 November 2026, BEO staging checks.** The birthday manager received the test deposit alert and opened the matching Inbox conversation. See the latest [staging results](STATUS.md). A real bank payment and physical kitchen slip are separate park checks.
 

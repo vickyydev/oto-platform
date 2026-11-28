@@ -186,6 +186,8 @@ import { Baby } from 'lucide-react';
 import type { Booking } from '@/types';
 import { useSaleLane } from '@/lib/lane';
 import { useLanguageChoice } from '@/lib/languageChoice';
+import type { SupportedLang } from '@/i18n/types';
+import { guestLanguageChoice, guestLanguageFor, withGuestLanguage, type GuestLanguageChoice } from '@/lib/guestLanguage';
 
 // Break a ticket line into its discountable component rows (kids/adults/socks/
 // each add-on) for the manual-discount picker. Mirrors computeLineBreakdown so
@@ -895,6 +897,13 @@ export default function Till() {
    */
   const [firstSaleKey] = useState(() => crypto.randomUUID());
   const saleKeyRef = useRef(firstSaleKey);
+  /**
+   * SCRUM-1077 — the language the guest chose in this sale, on this till's own
+   * customer half or on a paired display, under this sale's name. Saved with
+   * the sale for the gate's messages; never the till's own customer language,
+   * which carries the staff account's and the last guest's (`lib/guestLanguage.ts`).
+   */
+  const [guestLanguage, setGuestLanguage] = useState<GuestLanguageChoice | null>(null);
 
   /**
    * WHO THIS CART BELONGS TO, in the platform's own ids — S2-09a (SCRUM-203).
@@ -979,6 +988,8 @@ export default function Till() {
     if (station?.stationId) forgetSaleOnScreen(station.stationId);
     gateOnline.reset();
     saleKeyRef.current = crypto.randomUUID();
+    // SCRUM-1077 — the next guest chooses their own; the new name alone would already tell them apart.
+    setGuestLanguage(null);
     setCompletionRetry(null);
     voucher.reset();
     setVoucherUsed(null);
@@ -3355,7 +3366,7 @@ export default function Till() {
     // definition, so with a code on the cart the amount due is the platform's
     // quote too, whenever it gave one (`promoChargeSatang`).
     const promoCharge = held ? undefined : promoChargeSatang(cart.quote, discounts);
-    return buildCartPayload(lines, discounts, manualDiscounts, cartIdentity, cart.quote.satang, {
+    const payload = buildCartPayload(lines, discounts, manualDiscounts, cartIdentity, cart.quote.satang, {
       mode: cart.quote.pricingMode,
       modeReason: cart.quote.pricingModeReason,
       // S2-10b — the voucher rides by its code, and the amount due is the
@@ -3364,6 +3375,9 @@ export default function Till() {
       ...(held ? { promoCodes: [held.code], expectedTotalSatang: toSatang(cart.totals.total) } : {}),
       ...(promoCharge !== undefined ? { expectedTotalSatang: promoCharge } : {}),
     });
+    // SCRUM-1077 — the guest's chosen language rides with the sale, on the
+    // platform and the box lane alike; never on a quote, so choosing it re-prices nothing.
+    return withGuestLanguage(payload, guestLanguageFor(guestLanguage, saleKeyRef.current));
   };
 
   /**
@@ -3991,6 +4005,11 @@ export default function Till() {
   // SCRUM-763 — the customer half asks the guest's language before the phone
   // number, once per sale: `resetSale` moves the epoch, and the next guest chooses again.
   const customerLanguage = useLanguageChoice(customerStage === 'identify', `${saleEpochRef.current}`);
+  // SCRUM-1077 — and the language pressed is saved with this sale, for the gate's messages.
+  const chooseCustomerLanguage = (lang: SupportedLang) => {
+    customerLanguage.choose();
+    setGuestLanguage(guestLanguageChoice(saleKeyRef.current, lang));
+  };
 
   const reviewCandidate: Omit<ChildReviewPrompt, 'kind' | 'requestId'> = {
     visitorId: reviewVisitorId, referenceDate: reviewReferenceDate,
@@ -4326,6 +4345,9 @@ export default function Till() {
       return true;
     }
     if (answer.type === 'identify' && step === 1 && answer.phone?.trim()) {
+      // SCRUM-1077 — the display shows its first screen only once the guest chose a language.
+      const chosen = guestLanguageChoice(saleKeyRef.current, answer.language);
+      if (chosen) setGuestLanguage(chosen);
       setCustomerPhone(answer.phone);
       if (answer.nickname !== undefined) setCustomerNickname(answer.nickname);
       if (answer.contactChannel !== undefined) handleCustomerContactChannelChange(answer.contactChannel);
@@ -4902,7 +4924,7 @@ export default function Till() {
               nothingToPay={saleOwesNothing}
               pricePending={voucherPricePending}
               chooseLanguage={customerLanguage.open}
-              onLanguageChosen={customerLanguage.choose}
+              onLanguageChosen={chooseCustomerLanguage}
             />
           </div>
         )}

@@ -5305,6 +5305,47 @@ export const payrollIncentiveAssignments = pgTable("payroll_incentive_assignment
 ]);
 export type PayrollIncentiveAssignmentRow = typeof payrollIncentiveAssignments.$inferSelect;
 
+/**
+ * SCRUM-1075: a reading of an employee's incentive clause
+ * (employees.incentive_clause_text) in payroll's own incentive terms
+ * (shared/payroll-clause-reading.ts). The AI proposes one when a clause is new
+ * or changed; a person approves it, corrects it or marks it not an incentive.
+ * Nothing pays until approval, which creates the dated rules and assignments
+ * of the three tables above and names them in `rules`. The clause is kept as
+ * read with its hash, so an edited clause is seen and its approved reading
+ * keeps paying until a person decides a new one. A newer decision marks the
+ * older reading `replaced`; no reading is ever deleted.
+ */
+export const payrollIncentiveClauseReadings = pgTable("payroll_incentive_clause_readings", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  employeeId: varchar("employee_id").notNull(),
+  clauseText: text("clause_text").notNull(),
+  clauseHash: text("clause_hash").notNull(),
+  reading: jsonb("reading").notNull(),
+  source: text("source").notNull(),
+  model: text("model"),
+  status: text("status").notNull().default("pending"),
+  rules: jsonb("rules").notNull().default(sql`'[]'::jsonb`),
+  effectiveFrom: date("effective_from"),
+  effectiveTo: date("effective_to"),
+  decidedReason: text("decided_reason"),
+  decidedByUserId: varchar("decided_by_user_id").references(() => users.id),
+  decidedByName: text("decided_by_name"),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+  reason: text("reason").notNull(),
+  actorUserId: varchar("actor_user_id").references(() => users.id),
+  actorName: text("actor_name").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("payroll_incentive_clause_readings_tenant_id_id_unique").on(table.tenantId, table.id),
+  index("idx_payroll_incentive_clause_readings_employee").on(table.tenantId, table.employeeId, table.createdAt),
+  foreignKey({ name: "payroll_incentive_clause_readings_employee_fk", columns: [table.tenantId, table.employeeId], foreignColumns: [employees.tenantId, employees.id] }).onDelete("restrict"),
+  check("payroll_incentive_clause_readings_source_check", sql`${table.source} IN ('ai', 'person')`),
+  check("payroll_incentive_clause_readings_status_check", sql`${table.status} IN ('pending', 'approved', 'not-incentive', 'replaced')`),
+]);
+export type PayrollIncentiveClauseReadingRow = typeof payrollIncentiveClauseReadings.$inferSelect;
+
 // ============================================
 // PAYROLL RUN INPUTS, OT BANK AND LEAVE VALUATION (SCRUM-568, R3; migration 0024)
 // ============================================

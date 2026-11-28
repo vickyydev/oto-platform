@@ -16,6 +16,7 @@ import {
   decodeCardField,
   startReaderServer,
 } from '../src/gate/reader-host';
+import { readerScreen } from '../src/gate/reader-layout';
 import type { BoxConfigStation } from '../src/protocol';
 import { uuidv7 } from '../src/signing';
 import type { QueuedFact } from '../src/store';
@@ -710,7 +711,11 @@ test('the listener serves the two calls over HTTP, JSON with string values', asy
         reader: '0',
       }),
     });
-    assert.deepEqual(await res.json(), { code: '1', message: GATE_MESSAGES.welcome });
+    // Over the wire the message is laid out for the reader's screen (reader-layout.ts).
+    assert.deepEqual(await res.json(), {
+      code: '1',
+      message: readerScreen('1', GATE_MESSAGES.welcome, 'entry'),
+    });
     const form = await fetch(`http://127.0.0.1:${server.port}${READER_HEARTBEAT_PATH}`, {
       method: 'POST',
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
