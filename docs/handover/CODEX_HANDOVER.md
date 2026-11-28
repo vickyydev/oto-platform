@@ -1,3 +1,7 @@
+## Resume — 28 November 2026, 20:42 Bangkok
+
+SCRUM-1075 reached main with the staged and independently checked October payroll changes. The ticket remains Deployed, with five pictures. HR must supply the two missing payroll profiles before those readings can be approved. Birthday hosts still enter their own counts. The remaining work is the named live HR release at 22:30 Bangkok and the separate SCRUM-1076 midnight boundary.
+
 ## Resume — 28 November 2026, 20:32 Bangkok
 
 SCRUM-1076 has reached main with the dated settings, raw-count API, payroll preview and spend report. The first-day staging proof and both readbacks are on Jira. Await the genuine Bangkok midnight boundary, redeem the held slip at the virtual cash till, and issue and redeem a new slip under the second rule. Reconcile the resulting counts independently. The next separate main landing is SCRUM-1075. Keep live HR pinned to the rehearsed November 26 target.

@@ -24,7 +24,7 @@ export const PAYROLL_DISCOUNT_LABELS: Record<typeof PAYROLL_DISCOUNTS[number], s
 };
 
 export interface PayrollBranchRef { id: string; name: string }
-export interface PayrollPersonRef { id: string; name: string; jobTitle: string; homeBranchId: string | null; workerType: string }
+export interface PayrollPersonRef { id: string; name: string; jobTitle: string; homeBranchId: string | null; workerType: string; assignedCostCentres?: string[] }
 export interface MonthInputChange { id: string; key: string; priorValue: unknown; newValue: unknown; sourceKind: string; reason: string; who: string; at: string }
 
 export interface MonthInputsView {

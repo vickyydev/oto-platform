@@ -671,6 +671,10 @@ export interface AttendanceException {
 }
 
 export interface AttendanceDay {
+  /** Actual sites of accepted clock-ins on this day; retained independently of the payroll roster branch. */
+  clockBranches?: string[];
+  /** A labelled rota department only applies at its own site. */
+  shiftDepartments?: { branchId: string; name: string }[];
   id: string;
   branchId: BranchId;
   staffId: string;

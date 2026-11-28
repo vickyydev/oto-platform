@@ -205,6 +205,11 @@ function readTerms(raw: unknown, id: string, streams: Set<string>, branchIds: Se
   const ruleBranches = strings(base.branches) ? base.branches as string[] : [];
   const ruleStreams = strings(base.streams) ? base.streams as string[] : [];
   const addBack = strings(base.addBack) ? base.addBack as string[] : [];
+  const assigned = t.assignedRevenue as Partial<NonNullable<CompanyIncentive["assignedRevenue"]>> | undefined;
+  if (assigned && (t.kind !== "revenue" || typeof assigned.employeeId !== "string" || !Array.isArray(assigned.parks)
+    || !assigned.parks.length || assigned.parks.some(id => !branchIds.has(id)))) {
+    throw new PayrollRefusal(400, "The clause must use this park group's trading parks and name the employee whose assignment it follows.");
+  }
   for (const b of ruleBranches) if (!branchIds.has(b)) throw new PayrollRefusal(400, "Choose branches of this park group.");
   for (const s of ruleStreams) if (!streams.has(s)) throw new PayrollRefusal(400, `"${s}" is not one of this park group's revenue streams.`);
   if (addBack.some((d) => !(PAYROLL_DISCOUNTS as readonly string[]).includes(d))) throw new PayrollRefusal(400, "Unknown discount add-back.");
@@ -217,6 +222,8 @@ function readTerms(raw: unknown, id: string, streams: Set<string>, branchIds: Se
   const op = t.kpiOperator ?? "lt";
   if (!["lt", "lte", "gte", "gt"].includes(op as string)) throw new PayrollRefusal(400, "Choose how the KPI is compared.");
   const terms: CompanyIncentive = {
+    ...(t.childcarePool === true ? { childcarePool: true as const } : {}),
+    ...(assigned ? { assignedRevenue: { employeeId: assigned.employeeId!, parks: assigned.parks! } } : {}),
     id, name, kind: t.kind as CompanyIncentiveKind, staffIds: [],
     base: { branches: ruleBranches, streams: ruleStreams, addBack: addBack as CompanyIncentive["base"]["addBack"] },
     rate: t.rate, inputKey: typeof t.inputKey === "string" ? t.inputKey.trim().slice(0, 80) : "",
@@ -247,6 +254,10 @@ export async function saveIncentive(tenantId: string, actor: PayrollActor, body:
   const world = await rewardWorld(tenantId, from);
   return db.transaction(async (tx) => {
     await serialize(tx, tenantId);
+    const input = body.terms as Partial<CompanyIncentive> | undefined;
+    if (input?.childcarePool || input?.assignedRevenue || (input?.id && (await rewardDocument(tx, tenantId)).incentives.some(r => r.id === input.id && (r.childcarePool || r.assignedRevenue)))) {
+      throw new PayrollRefusal(400, "Change this reward and its membership by correcting and approving the person's contract clause.");
+    }
     return saveIncentiveIn(tx, tenantId, actor, body, world);
   });
 }
@@ -278,7 +289,13 @@ export async function saveIncentiveIn(tx: Tx, tenantId: string, actor: PayrollAc
       if (!rule) throw new PayrollRefusal(404, "Incentive rule not found");
     }
     const ruleId = existingId ?? randomUUID();
-    const branchIds = new Set([...(strings((rawTerms.base as Record<string, unknown> | undefined)?.branches) ? (rawTerms.base as { branches: string[] }).branches : []), ...titles.flatMap((t) => t.branches)]);
+    const baseParks = (rawTerms.base as { branches?: unknown } | undefined)?.branches;
+    const policyParks = (rawTerms.assignedRevenue as { parks?: unknown } | undefined)?.parks;
+    const branchIds = new Set([
+      ...(strings(baseParks) ? baseParks as string[] : []),
+      ...(strings(policyParks) ? policyParks as string[] : []),
+      ...titles.flatMap(t => t.branches),
+    ]);
     const ownBranches = await tenantBranchIds(tx, tenantId, Array.from(branchIds));
     if (titles.some((t) => t.branches.some((b) => !ownBranches.has(b)))) throw new PayrollRefusal(400, "Choose branches of this park group.");
     const terms = readTerms(rawTerms, ruleId, await liveStreams(tx, tenantId), ownBranches);
