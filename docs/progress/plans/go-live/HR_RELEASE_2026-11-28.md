@@ -30,9 +30,9 @@
 
 Migration `0060_beo_adult_serving_time.sql` contains a single `CREATE OR REPLACE VIEW otoapp_v.event_packages`. It keeps the existing output columns and adds adult serving information inside the kitchen JSON. Replacing a view takes a PostgreSQL lock on the view. It does not rewrite stored party rows.
 
-Migration `0061_payroll_incentive_clause_readings.sql` creates one empty table, a primary key, two indexes, checks and foreign keys. The foreign keys refer to tenants, users and employees, so those existing relations can briefly participate in DDL locks. It adds no reading, rule, assignment or historical payroll result. Exact migration time and lock behaviour on the production-sized copy still require the rehearsal.
+Migration `0061_payroll_incentive_clause_readings.sql` creates one empty table, a primary key, two indexes, checks and foreign keys. The foreign keys refer to tenants, users and employees, so those existing relations can briefly participate in DDL locks. It adds no reading, rule, assignment or historical payroll result. The two migrations completed together in 0.560 seconds on the production-sized copy with a two-second lock timeout. Live traffic can change the wait.
 
-A managed logical export of the production database completed on 28 November at 18:16 Bangkok. The downloaded archive is 43,060,942 bytes, SHA-256 `94d7861c93e454ccd99087e1e88706e5bbc6e5952ee0d43b1f14d131768c9a53`. Its local folder has an explicit Windows access rule for the operator’s account. The archive and scratch data stay under `C:/oto-data/work/livehr-rehearsal-20261128/private/`. Render also reports point-in-time recovery available. The rehearsal archive contains a PostgreSQL 16.16 directory-format dump. Restore its `otoapp` and `otoapp_v` schemas to a new empty, isolated PostgreSQL scratch database with `pg_restore --no-owner --no-privileges`. Never apply that rehearsal command against production. A fresh backup is required immediately before a live deployment.
+A managed logical export of the production database completed on 28 November at 18:16 Bangkok. The downloaded archive is 43,060,942 bytes, SHA-256 `94d7861c93e454ccd99087e1e88706e5bbc6e5952ee0d43b1f14d131768c9a53`. Its local folder has an explicit Windows access rule for the operator’s account. The archive and scratch data stay under `C:/oto-data/work/livehr-rehearsal-20261128/private/`. Render also reports point-in-time recovery available. The rehearsal archive contains a PostgreSQL 16.16 directory-format dump. For the tested restore, initialise a private loopback database, create the empty `otoapp` and `otoapp_v` schemas, and run `pg_restore --exit-on-error --no-owner --no-privileges --schema=otoapp --schema=otoapp_v` against that scratch database with the directory-format export. The schema filter omits creation of the two schemas themselves. A fresh backup is required immediately before a live deployment.
 
 | Count | Private export | Live read-only query |
 | --- | ---: | ---: |
@@ -50,7 +50,7 @@ A managed logical export of the production database completed on 28 November at 
 
 The live counts above come from two read-only probes. Job `job-dc5bnbkipgvc73bp6b7g` checked raw punches separately from attendance entries. Three more punches existed after the backup, before any deployment. It also counted 70 active HR users, with one missing both sign-in phone fields after blank and null handling. The private export independently gives the same two user counts.
 
-The intended rollback redeploys `oto-app-production` at the exact previous revision in the table above. The five recent successful HR releases took approximately three to four minutes each. This is deployment history. Booting the previous build against the migrated scratch database is required before relying on that rollback.
+The intended rollback redeploys `oto-app-production` at the exact previous revision in the table above. The five recent successful HR releases took approximately three to four minutes each. The previous build booted on the migrated copy in 8.85 seconds. Render deployment time also includes building and replacing the service.
 
 ## API, settings and automatic work
 
@@ -71,3 +71,9 @@ On both builds a synthetic user signed in and opened a stored birthday's BEO, it
 Before deployment, take another Render export and retain it privately as above. Allow three to four minutes for Render to redeploy the old build if rollback is necessary. A proposed quiet window is 22:30 Bangkok, subject to current park use and access for live checks. Existing production schedules continue. Staff will see the corrected BEO and Day-of details, the payroll fixes and the contract clause reader.
 
 The public HR status route returned HTTP 200 in both environments and omitted its Render commit. Tie release identity to Render's live deployment and verify its served assets or authenticated QA configuration. On production the preflight has verified the public health and read-only party billing API. Private sign-in, BEO, Day-of and Payroll require an authorised HR session. The park tablet needs its existing registration. Record which pages actually opened, attach masked production pictures to Jira only and leave attendance, party, payment and payroll records untouched.
+
+## Birthday team note, ready after the live release is verified
+
+Birthday team, please open an existing party on the live HR app. Check its BEO and then open Day-of. The BEO now uses the till?s collection figure, includes open additional bills and shows a separate adult serving time when one has been set. If the till cannot verify a billed item, the screen asks you to retry.
+
+Please send one ticket for each discrepancy. Tell us which screen you opened, what you expected and what you saw. We will answer each point as works, broken or not built. [Live HR app](https://app.otoplay.org/)
