@@ -37,6 +37,7 @@ A managed logical export of the production database completed on 28 November at 
 | Count | Private export | Live read-only query |
 | --- | ---: | ---: |
 | Employees | 80 | 80 |
+| Raw attendance punches | 12,589 | 12,592 at the later live check |
 | Attendance entries | 216 | 216 |
 | All events | 263 | — |
 | Party events | 172 | 172 |
@@ -46,6 +47,8 @@ A managed logical export of the production database completed on 28 November at 
 | Payroll runs | 0 | 0 |
 | Migration ledger entries | 58 | — |
 | Access events due to dispatch | 0 | 0 |
+
+The live counts above come from two read-only probes. Job `job-dc5bnbkipgvc73bp6b7g` checked raw punches separately from attendance entries. Three more punches existed after the backup, before any deployment. It also counted 70 active HR users, with one missing both sign-in phone fields after blank and null handling. The private export independently gives the same two user counts.
 
 The intended rollback redeploys `oto-app-production` at the exact previous revision in the table above. The five recent successful HR releases took approximately three to four minutes each. This is deployment history. Booting the previous build against the migrated scratch database is required before relying on that rollback.
 
