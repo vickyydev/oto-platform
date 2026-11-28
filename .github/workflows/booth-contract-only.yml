@@ -1,0 +1,48 @@
+name: Booth voucher contract verification
+on:
+  push:
+    branches: [verify/voucher-contract-20261128]
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build --filter='@oto/api^...'
+      - run: pnpm api-types:generate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: payroll-booth-contract
+          path: |
+            packages/api-types/openapi.json
+            packages/api-types/src/openapi.ts
+          if-no-files-found: error
+          retention-days: 3
+  payroll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: apps/oto-app
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/oto-app/package-lock.json
+      - run: npm ci
+      - run: npx --no-install tsx tests/payroll-engine.check.ts
+      - run: npm run check:ratchet
