@@ -1,3 +1,9 @@
+## Resume — 28 November 2026, 19:28 Bangkok
+
+Main checks, SCRUM-1082. The till and HR jobs completed successfully on `2696de697`. The workspace database test compared the old deposit migration with today's template list. Its narrow correction preserves both the original additions and the current database constraints. Staging read-only job `job-dc5cgj49v7es73a28rrg` matched all three. Follow the automatic main run through the remaining API shards and record the served staging revisions and four screens.
+
+Payroll on staging matched the independent October calculation. The ongoing voucher trial uses a virtual cash till. Live HR has a separate 22:30 Bangkok quiet window.
+
 **28 November 2026, main release of the CI repairs.** Watch the exact main push SHA. On green, read the ten Render staging revisions and open launcher sign-in, Tickets on the separately verified virtual till, the HR dashboard and Inbox. The sign-in wording improvement has its own [staging evidence on the sign-in ticket](https://oto-suite-dev.atlassian.net/browse/SCRUM-1061) and follows this landing. The HR production rehearsal is complete on its release branch and both payroll streams remain on staging-only lanes.
 
 **28 November 2026, birthday-form fixture update.** Retest all eleven suites against the new shared loopback till, then verify the release from its exact main SHA. Staging sales, live billing and the offline guard are unchanged by the fixture update.

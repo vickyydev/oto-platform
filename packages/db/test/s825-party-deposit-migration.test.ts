@@ -105,12 +105,10 @@ describe('SCRUM-825 party deposit migration', () => {
       const was = keysIn(before[table]!.checkConstraints![check]!.value);
       const now = keysIn(after[table]!.checkConstraints![check]!.value);
       expect(now, check).toEqual([...was, ...NEW_TEMPLATE_KEYS]);
-      expect(now, check).toEqual([...INBOX_TEMPLATE_KEYS]);
     }
     const kindsWere = keysIn(before['inbox.event']!.checkConstraints!.event_kind_check!.value);
     const kindsNow = keysIn(after['inbox.event']!.checkConstraints!.event_kind_check!.value);
     expect(kindsNow).toEqual([...kindsWere, ...NEW_EVENT_KINDS]);
-    expect(kindsNow).toEqual([...INBOX_EVENT_KINDS]);
     expect(before['pos.party_deposit_request']).toBeUndefined();
     expect(after['pos.party_deposit_request']).toBeDefined();
   });
@@ -195,7 +193,13 @@ describe('SCRUM-825 party deposit migration', () => {
         where conname in ('template_key_check', 'channel_account_out_of_hours_key_check', 'event_kind_check') order by conname`,
     );
     expect(rows.map((r) => r.name)).toEqual(['channel_account_out_of_hours_key_check', 'event_kind_check', 'template_key_check']);
-    for (const r of rows.filter((x) => x.name !== 'event_kind_check')) for (const key of NEW_TEMPLATE_KEYS) expect(r.def, r.name).toContain(`'${key}'`);
-    for (const kind of NEW_EVENT_KINDS) expect(rows[1]!.def).toContain(`'${kind}'`);
+    // The running database includes every migration after the original party deposit change.
+    for (const row of rows) {
+      const currentKeys = row.name === 'event_kind_check' ? INBOX_EVENT_KINDS : INBOX_TEMPLATE_KEYS;
+      const partyKeys = row.name === 'event_kind_check' ? NEW_EVENT_KINDS : NEW_TEMPLATE_KEYS;
+      const databaseKeys = keysIn(row.def);
+      expect(databaseKeys, row.name).toEqual([...currentKeys]);
+      expect(databaseKeys, row.name).toEqual(expect.arrayContaining(partyKeys));
+    }
   });
 });

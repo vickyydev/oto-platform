@@ -33,6 +33,8 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
+28 November 2026, 19:28 Bangkok. SCRUM-1082, Main: the automatic checks pass again (failing since 23 November). The migration test now checks its historical change and the full current constraint separately. All three current constraints were independently confirmed on staging. The till and HR jobs passed on `2696de697`. Staging October payroll matched to the satang, with voucher cash trials and the 22:30 live HR window still outstanding.
+
 **28 November 2026, staging release candidate.** [Main: the automatic checks pass again (failing since 23 November)](https://oto-suite-dev.atlassian.net/browse/SCRUM-1082) repairs the release checks and audits the hosted checkout writes. The green CI run and ten matching staging services are the remaining release evidence. Production HR follows its separate rehearsal and named-service deployment.
 
 **28 November 2026, work-order merges recorded.** PR 15 landed at `fb61b518f` and PR 14 at `57ea81a91`. The recovery ticket holds the file comparison and masked staging evidence. The open G5 decision concerns GitHub’s historical copy of the earlier handover. [Current status](../progress/STATUS.md)
