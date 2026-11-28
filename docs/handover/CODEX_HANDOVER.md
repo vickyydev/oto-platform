@@ -1,3 +1,5 @@
+**28 November 2026, booth voucher database receipts.** Staging job `job-dc5c0km1egvs73bcoiq0` counted zero surviving paid October redemptions. The original counted rows remained unchanged in the migrated-HR replay test. The booth and till are ready for synthetic staff, a memory-only printer, staged cash redemptions and the independent reconciliation.
+
 **28 November 2026, resume the booth voucher and flyer checks.** Draft PR 17 includes the generated API contract, the surviving-sale replay fix and the three updated flyer fixtures. The payroll suite and focused API database review passed. Keep the isolated staging stations available for the cash rehearsal and the independent month reconciliation.
 
 **28 November 2026, booth voucher payroll.** Resume `lane/vouchers-20261128` at source `bc05e0215`. Generate and check the API contract on a hosted runner. Run the payroll and database checks before deploying to staging. The cash rehearsal requires two synthetic employees and an isolated booth and till. Verify the month against raw records and attach masked evidence on the ticket.
