@@ -33,6 +33,8 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
+**28 November 2026, staging release candidate.** [Main: the automatic checks pass again (failing since 23 November)](https://oto-suite-dev.atlassian.net/browse/SCRUM-1082) repairs the release checks and audits the hosted checkout writes. The green CI run and ten matching staging services are the remaining release evidence. Production HR follows its separate rehearsal and named-service deployment.
+
 **28 November 2026, work-order merges recorded.** PR 15 landed at `fb61b518f` and PR 14 at `57ea81a91`. The recovery ticket holds the file comparison and masked staging evidence. The open G5 decision concerns GitHub’s historical copy of the earlier handover. [Current status](../progress/STATUS.md)
 
 **28 November 2026, administrator recovery.** The PR 14 source matches the live recovery route on both APIs. Eight local authentication suites passed. The phone input on the earlier staging evidence card is masked. PR 15 was merged with its staff details removed from main. G5 remains open for the earlier copy held by GitHub. [Release record](../progress/STATUS.md)

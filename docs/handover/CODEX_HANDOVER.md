@@ -1,3 +1,5 @@
+**28 November 2026, main release of the CI repairs.** Watch the exact main push SHA. On green, read the ten Render staging revisions and open launcher sign-in, Tickets on the separately verified virtual till, the HR dashboard and Inbox. The sign-in wording improvement has its own [staging evidence on the sign-in ticket](https://oto-suite-dev.atlassian.net/browse/SCRUM-1061) and follows this landing. The HR production rehearsal is complete on its release branch and both payroll streams remain on staging-only lanes.
+
 **28 November 2026, birthday-form fixture update.** Retest all eleven suites against the new shared loopback till, then verify the release from its exact main SHA. Staging sales, live billing and the offline guard are unchanged by the fixture update.
 
 **28 November 2026, release repair ready for hosted verification.** Inspect the full commit SHA on [the main repair](https://github.com/vickyydev/oto-platform/pull/16). The local focused checks passed. Confirm the hosted API typecheck and the full main suite, then read back each staging deploy and open the four requested screens. The staging sign-in fixtures have already been removed.
