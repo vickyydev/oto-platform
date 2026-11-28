@@ -20,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { canViewHrSalary, HR_PAY_HIDDEN_NOTE } from "@shared/hr-salary-permission";
+import type { RevenuePark } from "@shared/payroll-clause-policy";
 import {
   CLAUSE_STATE_LABEL, NOT_BONUS_KINDS,
   type ClauseBonusTerms, type ClausePart, type ClausePersonView, type ClauseReading, type ClauseReadingsView, type ClauseState,
@@ -89,11 +90,17 @@ export default function PayrollClauseReadingsPage() {
 }
 
 /** One bonus part's terms in plain words, with the park's own names. */
-function termsText(b: ClauseBonusTerms, data: ClauseReadingsView): string {
+function termsText(b: ClauseBonusTerms, data: ClauseReadingsView, person: ClausePersonView): string {
+  if (b.childcarePool) return "One Childcare Team pool per park. The worked example shows each member’s childcare shift days and any days counted from clock-ins.";
   if (b.joinPool) return `Joins the approved team pool "${data.pools.find((p) => p.ruleId === b.joinPool)?.name ?? "a pool no longer approved"}".`;
   const label = (key: string) => data.streams.find((s) => s.key === key)?.label ?? key;
+  const scope = b.revenue?.branches;
+  const centres = person.assignedCostCentres ?? [];
+  const park = scope === "home" ? data.branches.find(p => p.id === person.homeBranchId)?.name
+    : scope?.startsWith("branch:") ? data.branches.find(p => p.id === scope.slice(7))?.name
+    : scope === "assigned" && centres.length === 1 ? data.branches.find(p => p.id === centres[0])?.name : null;
   const what = b.basis === "percent-of-revenue"
-    ? `${b.percent ?? "?"}% of ${b.revenue?.streams.length ? b.revenue.streams.map(label).join(" + ") : "no sales stream chosen"} (sales less VAT and service charge) at ${b.revenue?.branches === "home" ? "the person's home branch" : "all branches"}`
+    ? `${b.percent ?? "?"}% of ${b.revenue?.streams.length ? b.revenue.streams.map(label).join(" + ") : "no sales stream chosen"} (sales less VAT and service charge) at ${park ?? (scope === "home" || scope?.startsWith("branch:") ? "a park needing review" : "all payroll parks together")}`
     : `${b.bahtPerUnit ?? "?"} baht per ${b.unit?.described ?? "unit"}, counted ${b.unit?.counted === "per-person" ? "for this person" : "for the team"} as "${b.unit?.inputKey ?? "?"}"`;
   const gate = b.threshold !== null ? `; only when those sales exceed ${b.threshold.toLocaleString("en-US")}` : "";
   const cap = b.cap !== null ? `; at most ${b.cap.toLocaleString("en-US")} a month` : "";
@@ -101,14 +108,14 @@ function termsText(b: ClauseBonusTerms, data: ClauseReadingsView): string {
   return `${what}${gate}${cap}${share}.`;
 }
 
-function PartRow({ part, data }: { part: ClausePart; data: ClauseReadingsView }) {
+function PartRow({ part, data, person }: { part: ClausePart; data: ClauseReadingsView; person: ClausePersonView }) {
   const badge = part.type === "bonus" ? <Badge>Bonus</Badge>
     : part.type === "not-a-bonus" ? <Badge variant="outline" className="border-orange-500/50 text-orange-800 dark:text-orange-300">Not a bonus · {NOT_BONUS_LABEL[part.notBonusKind ?? "other"]}</Badge>
     : <Badge variant="destructive">Needs a person</Badge>;
   return <li className="space-y-0.5 px-3 py-2 text-sm" data-testid={`part-${part.type}`}>
     <div className="flex flex-wrap items-center gap-2">{badge}<span className="italic text-muted-foreground">“{part.quote}”</span></div>
     <p>{part.plainWords}</p>
-    {part.type === "bonus" && part.bonus && <p className="text-xs text-muted-foreground">Payroll terms: {termsText(part.bonus, data)}</p>}
+    {part.type === "bonus" && part.bonus && <p className="text-xs text-muted-foreground">Payroll terms: {termsText(part.bonus, data, person)}</p>}
     {part.type === "not-a-bonus" && <p className="text-xs text-orange-800 dark:text-orange-300">Flagged for a person: never paid as a bonus by payroll.</p>}
     {part.type === "needs-a-person" && part.needsPersonWhy && <p className="text-xs text-destructive">{part.needsPersonWhy}</p>}
   </li>;
@@ -156,7 +163,7 @@ function PersonCard({ person, data, month }: { person: ClausePersonView; data: C
         <div><p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           The reading{reading.source === "person" ? ", corrected by a person" : ", by the AI"} · {reading.status === "pending" ? "waiting for approval: not paid yet" : reading.status === "approved" ? `approved${reading.effectiveFrom ? `, paid from ${reading.effectiveFrom}${reading.effectiveTo ? ` to ${reading.effectiveTo}` : ""}` : ""}` : "not an incentive: nothing paid"}</p>
           <p className="mt-1 text-sm font-medium" data-testid="reading-summary">{reading.reading.summary}</p></div>
-        <ul className="divide-y rounded-lg border">{reading.reading.parts.map((part, i) => <PartRow key={i} part={part} data={data} />)}</ul>
+        <ul className="divide-y rounded-lg border">{reading.reading.parts.map((part, i) => <PartRow key={i} part={part} data={data} person={person} />)}</ul>
         {questions.length > 0 && <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3" data-testid="reading-questions">
           <p className="flex items-center gap-2 text-sm font-semibold"><CircleDashed className="h-4 w-4" />Questions for a person</p>
           <ul className="mt-1 list-disc space-y-0.5 pl-6 text-sm">{questions.map((q) => <li key={q}>{q}</li>)}</ul></div>}
@@ -195,6 +202,9 @@ function Example({ readingId, month }: { readingId: string; month: string }) {
     {example.isLoading && <Skeleton className="mt-2 h-10 w-full" />}
     {example.error != null && <p className="mt-1 text-destructive">{errorText(example.error)}</p>}
     {example.data && <>
+      {!!example.data.childcare?.length && <table className="w-full text-left text-xs"><caption className="text-left font-semibold">Childcare Team shares</caption>
+        <thead><tr>{["Park", "Team member", "Childcare shift days", "Clock-in fallback days", "Share (baht)"].map(t => <th key={t} scope="col">{t}</th>)}</tr></thead>
+        <tbody>{example.data.childcare.map((r, i) => <tr key={i}><td>{r.branch}</td><td>{r.person}</td><td>{r.shiftDays}</td><td>{r.clockDays}</td><td>{money(r.amount)}</td></tr>)}</tbody></table>}
       {example.data.lines.length > 0 && <ul className="mt-1 divide-y">{example.data.lines.map((l, i) => <li key={i} className="flex flex-wrap items-start gap-2 py-1.5">
         <span className="min-w-[12rem] flex-1"><span className="font-medium">{l.ruleName}</span>{l.joined && <Badge variant="outline" className="ml-1">team pool</Badge>}{!l.targetMet && <Badge variant="secondary" className="ml-1">threshold not passed</Badge>}
           <span className="block text-xs text-muted-foreground">{l.formula}</span></span>
@@ -247,8 +257,9 @@ function CorrectDialog({ person, data, draft, onDraft, onClose }: { person: Clau
               : <Field label="Baht per unit"><NumberInput label="Baht per unit" value={b.bahtPerUnit} onChange={(n) => setBonus(i, { bahtPerUnit: nullable(n) })} /></Field>}
             {b.basis === "percent-of-revenue" && <>
               <Field label="Sales described as"><Input value={b.revenue?.described ?? ""} onChange={(e) => setBonus(i, { revenue: { ...(b.revenue ?? { streams: [], branches: "all" }), described: e.target.value } })} /></Field>
-              <Field label="At"><select className={selectClass} value={b.revenue?.branches ?? "all"} onChange={(e) => setBonus(i, { revenue: { ...(b.revenue ?? { described: "", streams: [] }), branches: e.target.value as "all" } })}>
-                <option value="all">All branches</option><option value="home">The person's home branch</option></select></Field>
+              <Field label="At"><select className={selectClass} value={b.revenue?.branches ?? "assigned"} onChange={(e) => setBonus(i, { revenue: { ...(b.revenue ?? { described: "", streams: [] }), branches: e.target.value as RevenuePark } })}>
+                <option value="assigned">From the person's park assignment</option><option value="all">All payroll parks together</option><option value="home">The person's home park</option>
+                {data.branches.map(park => <option key={park.id} value={`branch:${park.id}`}>{park.name}</option>)}</select></Field>
               <div className="sm:col-span-3"><Field label="Sales streams">
                 <div className="flex flex-wrap gap-2">{data.streams.map((s) => <label key={s.key} className="flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs">
                   <input type="checkbox" checked={b.revenue?.streams.includes(s.key) ?? false} onChange={() => {

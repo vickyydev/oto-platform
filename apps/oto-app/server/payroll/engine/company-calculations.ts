@@ -154,7 +154,8 @@ export function calculateCompanyEngine(data: PayrollWorld, doc: CompanyPayrollDo
     const s = staff.find(s => s.id === award.staffId)!, p = s.payrollProfile!;
     const rule = doc.incentives.find(r => r.id === award.ruleId)!;
     const dates = award.rewardTrace?.dates ?? datesIn(month).filter(date => employed(p, date) && date >= (award.rewardTrace?.from ?? rule.effectiveFrom) && date <= (award.rewardTrace?.to ?? rule.effectiveTo ?? `${month}-31`));
-    linesByPerson.get(s.id)!.push({ id: `incentive:${award.ruleId}:${award.rewardTrace?.version ?? 1}:${award.rewardTrace?.assignment.id ?? s.id}`, component: `incentive:${award.ruleId}`, label: award.name,
+    const scope = award.childcare ? `:park:${award.childcare.branchId}` : award.rewardTrace?.rule.assignedRevenue ? `:from:${award.rewardTrace.from}` : "";
+    linesByPerson.get(s.id)!.push({ id: `incentive:${award.ruleId}:${award.rewardTrace?.version ?? 1}:${award.rewardTrace?.assignment.id ?? s.id}${scope}`, component: `incentive:${award.ruleId}`, label: award.name,
       category: "earning", amount: award.amount, formula: award.formula, inputs: [award.formula], sourceMonth: month,
       allocations: splitEarning(data, p, award.amount, dates.map(date => ({ date, weight: 1 }))), taxable: true, ssoWage: false, rewardTrace: award.rewardTrace });
   }

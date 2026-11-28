@@ -4,6 +4,8 @@ import { apportion, datesIn, employed, money, previousMonth, revenueBase, worked
 import type { CompanyIncentive, CompanyPayrollDocument, IncentiveAward, PayrollException, ServiceDistribution, RewardTrace } from "./company-model";
 import { assignmentFor, versionsForMonth } from "./company-rewards";
 import { calculateGroupedService } from "./company-service-groups";
+import { childcareAwards } from "./childcare-pool";
+import { revenuePeriods } from "./clause-park";
 
 export function calculateCompanyService(data: PayrollWorld, doc: CompanyPayrollDocument, month: string,
   people: StaffMember[], errors: PayrollException[]): ServiceDistribution[] {
@@ -46,8 +48,9 @@ export function calculateCompanyService(data: PayrollWorld, doc: CompanyPayrollD
 
 export function calculateCompanyIncentives(data: PayrollWorld, doc: CompanyPayrollDocument, month: string,
   people: StaffMember[], salaries: Map<string, number>, errors: PayrollException[]): IncentiveAward[] {
-  const result: IncentiveAward[] = [];
-  const active = versionsForMonth(doc, month).filter(v => v.terms.enabled !== false);
+  const versions = versionsForMonth(doc, month).filter(v => v.terms.enabled !== false);
+  const result = childcareAwards(data, doc, month, people, versions.filter(v => v.terms.childcarePool), errors);
+  const active = versions.filter(v => !v.terms.childcarePool).flatMap(v => revenuePeriods(v, month, people));
   // Guarantees run last and include all preceding incentive awards.
   for (const version of [...active.filter(v => v.terms.kind !== "guarantee"), ...active.filter(v => v.terms.kind === "guarantee")]) {
     const rule = { ...version.terms, effectiveFrom: version.effectiveFrom, effectiveTo: version.effectiveTo };
@@ -63,6 +66,11 @@ export function calculateCompanyIncentives(data: PayrollWorld, doc: CompanyPayro
     });
     const participants = segments.map(s => s.staff);
     if (!participants.length) continue;
+    if (rule.assignedRevenue && !rule.base.branches.length) {
+      errors.push({ id: `${rule.id}-park-${rule.effectiveFrom}`, staffId: rule.assignedRevenue.employeeId, severity: "blocking", kind: "missing-input",
+        message: `The revenue clause needs a park assignment from ${rule.effectiveFrom}.` });
+      continue;
+    }
     const needsRevenue = rule.kind === "revenue" || rule.kind === "team-days" || rule.target !== null;
     const base = needsRevenue ? revenueBase(doc, month, rule.base, errors, rule.name) : 0;
     // PAYROLL-CONCERN-4 (SCRUM-564): the target gate is strict `>`; the older engine's `targetGate` uses `≥` (unpaid). This answer pays.
