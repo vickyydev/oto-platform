@@ -53,6 +53,7 @@
  */
 import { and, asc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import {
+  departments,
   employeeTimeOff,
   publicHolidays,
   scheduleAssignments,
@@ -72,7 +73,7 @@ export interface AttendanceSources {
   events: { employeeId: string; branchId: string; eventType: string; eventTime: Date }[];
   entries: { id: string; employeeId: string; branchId: string; shiftDate: string; clockInAt: Date | null; clockOutAt: Date | null; status: string; updatedAt: Date }[];
   issues: { id: string; employeeId: string; branchId: string; issueDate: string; issueType: string; status: string; resolutionNote: string | null; createdAt: Date }[];
-  assignments: { employeeId: string; shiftDate: string; startTime: string; endTime: string }[];
+  assignments: { employeeId: string; shiftDate: string; startTime: string; endTime: string; branchId?: string; department?: string | null; activeFrom?: string | null; activeUntil?: string | null }[];
   holidays: string[];
   timeOff: { employeeId: string; startDate: Date; endDate: Date }[];
 }
@@ -110,10 +111,10 @@ export function buildAttendanceDays(people: AttendancePerson[], sources: Attenda
   const inWindow = (date: string) => date >= window.from && date <= window.to;
   const key = (employeeId: string, date: string) => `${employeeId}:${date}`;
   const holidays = new Set(sources.holidays);
-  type Acc = { firstIn: string | null; lastOut: string | null; branchId: string | null; unpaired: boolean };
+  type Acc = { firstIn: string | null; lastOut: string | null; branchId: string | null; unpaired: boolean; inBranches: Set<string> };
   const punches = new Map<string, Acc>();
   const touched = new Set<string>();
-  const acc = (k: string) => { let a = punches.get(k); if (!a) { a = { firstIn: null, lastOut: null, branchId: null, unpaired: false }; punches.set(k, a); } return a; };
+  const acc = (k: string) => { let a = punches.get(k); if (!a) { a = { firstIn: null, lastOut: null, branchId: null, unpaired: false, inBranches: new Set() }; punches.set(k, a); } return a; };
 
   const byPerson = new Map<string, AttendanceSources["events"]>();
   for (const e of sources.events) {
@@ -129,6 +130,7 @@ export function buildAttendanceDays(people: AttendancePerson[], sources: Attenda
         if (open) { acc(key(employeeId, open.date)).unpaired = true; continue; }
         open = { date: local.date };
         const a = acc(key(employeeId, local.date));
+        a.inBranches.add(e.branchId);
         if (a.firstIn === null || local.time < a.firstIn) a.firstIn = local.time;
         a.branchId ??= e.branchId;
         touched.add(key(employeeId, local.date));
@@ -155,8 +157,13 @@ export function buildAttendanceDays(people: AttendancePerson[], sources: Attenda
     const list = issues.get(k) ?? []; list.push(i); issues.set(k, list); touched.add(k);
   }
   const plans = new Map<string, { start: string; end: string }>();
+  const shifts = new Map<string, NonNullable<AttendanceDay["shiftDepartments"]>>();
   for (const a of sources.assignments) {
     const k = key(a.employeeId, a.shiftDate);
+    if (a.branchId && a.department && (!a.activeFrom || a.shiftDate >= a.activeFrom) && (!a.activeUntil || a.shiftDate <= a.activeUntil)) {
+      const list = shifts.get(k) ?? [];
+      list.push({ branchId: a.branchId, name: a.department }); shifts.set(k, list);
+    }
     const start = a.startTime.slice(0, 5), end = a.endTime.slice(0, 5);
     const old = plans.get(k);
     plans.set(k, old ? { start: start < old.start ? start : old.start, end: end > old.end ? end : old.end } : { start, end });
@@ -226,6 +233,8 @@ export function buildAttendanceDays(people: AttendancePerson[], sources: Attenda
       }
       if (overtimeHours > 0 && !kinds.has("overtime")) exceptions.push(base("overtime", null, `${overtimeHours}h after the rota end ${plan!.end}`));
       out.push({
+        clockBranches: rejectedOnly ? [] : approved?.clockInAt ? [approved.branchId] : [...(p?.inBranches ?? [])],
+        shiftDepartments: shifts.get(k) ?? [],
         id: k, branchId: person.rosterBranchId, staffId: person.id, date,
         scheduled, dayOff: person.weeklyOffDays.includes(dayOfWeek(date)), holiday: holidays.has(date),
         plannedClockIn: plan?.start ?? null, plannedClockOut: plan?.end ?? null,
@@ -260,9 +269,11 @@ export async function loadAttendanceFeed(tenantId: string, people: AttendancePer
       issueType: timekeepingIssues.issueType, status: timekeepingIssues.status, resolutionNote: timekeepingIssues.resolutionNote, createdAt: timekeepingIssues.createdAt })
       .from(timekeepingIssues).where(and(eq(timekeepingIssues.tenantId, tenantId), inArray(timekeepingIssues.employeeId, ids),
         gte(timekeepingIssues.issueDate, window.from), lte(timekeepingIssues.issueDate, window.to))),
-    db.select({ employeeId: scheduleAssignments.employeeId, shiftDate: scheduleAssignments.shiftDate, startTime: scheduleShiftRows.startTime, endTime: scheduleShiftRows.endTime })
+    db.select({ employeeId: scheduleAssignments.employeeId, shiftDate: scheduleAssignments.shiftDate, startTime: scheduleShiftRows.startTime, endTime: scheduleShiftRows.endTime,
+      branchId: scheduleShiftRows.branchId, department: departments.name, activeFrom: scheduleShiftRows.activeFromDate, activeUntil: scheduleShiftRows.activeUntilDate })
       .from(scheduleAssignments)
       .innerJoin(scheduleShiftRows, and(eq(scheduleShiftRows.id, scheduleAssignments.shiftRowId), eq(scheduleShiftRows.tenantId, tenantId)))
+      .leftJoin(departments, and(eq(departments.id, scheduleShiftRows.departmentId), eq(departments.tenantId, tenantId)))
       .where(and(eq(scheduleAssignments.tenantId, tenantId), inArray(scheduleAssignments.employeeId, ids),
         gte(scheduleAssignments.shiftDate, window.from), lte(scheduleAssignments.shiftDate, window.to)))
       .orderBy(asc(scheduleAssignments.shiftDate)),
@@ -274,7 +285,7 @@ export async function loadAttendanceFeed(tenantId: string, people: AttendancePer
   ]);
   const days = buildAttendanceDays(people, {
     events, entries, issues,
-    assignments: assignments.flatMap((a) => a.employeeId ? [{ employeeId: a.employeeId, shiftDate: String(a.shiftDate).slice(0, 10), startTime: String(a.startTime), endTime: String(a.endTime) }] : []),
+    assignments: assignments.flatMap((a) => a.employeeId ? [{ ...a, employeeId: a.employeeId, shiftDate: String(a.shiftDate).slice(0, 10), startTime: String(a.startTime), endTime: String(a.endTime) }] : []),
     holidays: holidays.map((h) => String(h.date).slice(0, 10)),
     timeOff,
   }, window);
