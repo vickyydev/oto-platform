@@ -1,3 +1,7 @@
+## Resume — 28 November 2026, 22:40 Bangkok
+
+SCRUM-1083, Live HR app: the BEO fixes of 23 November and the payroll fixes reach production. The HR release is live at `6cd1569d7`. All eleven business counts agree across deployment, the protected BEO billing call returned HTTP 200 and a signed-in session succeeded. The park still needs to open the protected BEO, Day-of and Payroll screens and its registered tablet. The birthday-team note and the rehearsed rollback are in [the release record](../progress/plans/go-live/HR_RELEASE_2026-11-28.md). The independent staging booth calculation resumes after the genuine midnight date change.
+
 ## Resume — 28 November 2026, 21:38 Bangkok
 
 SCRUM-1076. Three old HR-view inventories now recognize the scoped default-booth-rule view, the server caller is recorded, and the Console button uses the checked settings handoff. All 94 executed targeted checks passed, with 24 existing skips. Watch the exact new main run and confirm the named Console handoff on staging. The copied October and first-day November payroll results remain valid. The 22:30 named live HR deploy and genuine midnight voucher boundary are still outstanding.

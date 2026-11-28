@@ -33,6 +33,8 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
+28 November 2026, 22:40 Bangkok. SCRUM-1083, Live HR app: the BEO fixes of 23 November and the payroll fixes reach production. Production HR is on the rehearsed staging revision `6cd1569d7`. The before-and-after business counts match, and the signed-in session and existing-party billing call succeeded. The park still needs to open BEO, Day-of, Payroll and the registered tablet. The owner has a prepared birthday-team note in the [release record](../progress/plans/go-live/HR_RELEASE_2026-11-28.md).
+
 28 November 2026, 21:38 Bangkok. SCRUM-1076. Combined payroll checks uncovered old view inventories and a hand-typed Console link. The entries now name the real, restricted HR readers and the existing checked settings handoff. Targeted checks passed. The final staging link and next main run are being verified.
 
 28 November 2026, 20:42 Bangkok. SCRUM-1075, Payroll: read each incentive clause with AI, approve the reading, and pay it from a rule. The native staging preview matched the separate October calculation to the satang, and Jira holds five inspected pictures. Seven readings were approved. Two are awaiting payroll profiles.
