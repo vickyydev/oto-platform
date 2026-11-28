@@ -82,20 +82,22 @@ export async function payrollPeople(tenantId: string, asOf: string): Promise<Pay
     db.select({ profile: payrollProfiles, employee: employees }).from(payrollProfiles)
       .innerJoin(employees, and(eq(employees.id, payrollProfiles.employeeId), eq(employees.tenantId, tenantId)))
       .where(eq(payrollProfiles.tenantId, tenantId)),
-    db.select({ profileId: payrollProfileAllocations.profileId, effectiveFrom: payrollProfileAllocations.effectiveFrom, homeBranchId: payrollProfileAllocations.homeBranchId })
+    db.select({ profileId: payrollProfileAllocations.profileId, effectiveFrom: payrollProfileAllocations.effectiveFrom, homeBranchId: payrollProfileAllocations.homeBranchId, lines: payrollProfileAllocations.lines })
       .from(payrollProfileAllocations).where(eq(payrollProfileAllocations.tenantId, tenantId)),
   ]);
   return rows.map(({ profile, employee }) => {
-    const home = allocations.filter((x) => x.profileId === profile.id && String(x.effectiveFrom).slice(0, 10) <= asOf)
-      .sort((x, y) => String(y.effectiveFrom).localeCompare(String(x.effectiveFrom)))[0]?.homeBranchId ?? null;
-    return { id: employee.id, name: getEmployeeDisplayName(employee), jobTitle: profile.jobTitle, homeBranchId: home, workerType: profile.workerType };
+    const allocation = allocations.filter((x) => x.profileId === profile.id && String(x.effectiveFrom).slice(0, 10) <= asOf)
+      .sort((x, y) => String(y.effectiveFrom).localeCompare(String(x.effectiveFrom)))[0];
+    const lines = (allocation?.lines ?? []) as { costCentre: string; percent: number }[];
+    return { id: employee.id, name: getEmployeeDisplayName(employee), jobTitle: profile.jobTitle, homeBranchId: allocation?.homeBranchId ?? null,
+      assignedCostCentres: Array.from(new Set(lines.filter(l => l.percent > 0).map(l => l.costCentre))), workerType: profile.workerType };
   }).sort((x, y) => x.name.localeCompare(y.name));
 }
 
-export async function payrollBranches(tenantId: string) {
+export async function payrollBranches(tenantId: string, tradingOnly = false) {
   const rows = await db.selectDistinct({ id: branches.id, name: branches.name }).from(branches)
     .innerJoin(payrollBranchDetailsVersions, and(eq(payrollBranchDetailsVersions.tenantId, tenantId), eq(payrollBranchDetailsVersions.branchId, branches.id)))
-    .where(eq(branches.tenantId, tenantId)).orderBy(asc(branches.name));
+    .where(and(eq(branches.tenantId, tenantId), tradingOnly ? sql`${branches.coreSyncStatus} is distinct from 'APP_ONLY'` : undefined)).orderBy(asc(branches.name));
   return rows;
 }
 

@@ -24,6 +24,9 @@ export interface ServiceShareGroup {
 export interface ServicePersonException { staffId: string; kind: "exclude" | "fixed" | "weight"; value: number }
 export type CompanyIncentiveKind = "revenue" | "team-days" | "unit-pool" | "unit" | "kpi" | "guarantee" | "manual";
 export interface CompanyIncentive {
+  childcarePool?: true;
+  /** A personal clause whose sales follow the employee's dated park allocation. */
+  assignedRevenue?: { employeeId: string; parks: string[] };
   id: string; name: string; kind: CompanyIncentiveKind; staffIds: string[];
   base: RevenueBase; rate: number; inputKey: string;
   target: number | null; cap: number | null; effectiveFrom: string; effectiveTo: string | null;
@@ -120,7 +123,8 @@ export interface ServiceDistribution {
   groups?: { id: string; name: string; pool: number; denominator: number; dayRate: number; paid: number; retained: number; basis: ServicePolicy["basis"] }[];
   details?: Record<string, string>;
 }
-export interface IncentiveAward { ruleId: string; name: string; staffId: string; amount: number; formula: string; targetMet: boolean; base: number; units: number; rewardTrace?: RewardTrace }
+export interface IncentiveAward { ruleId: string; name: string; staffId: string; amount: number; formula: string; targetMet: boolean; base: number; units: number; rewardTrace?: RewardTrace;
+  childcare?: { branchId: string; shiftDays: number; clockDays: number; teamDays: number; pool: number } }
 export interface PayrollException {
   id: string; staffId?: string; branchId?: BranchId; entityId?: string; severity: "warning" | "blocking" | "info"; kind: string; message: string;
 }

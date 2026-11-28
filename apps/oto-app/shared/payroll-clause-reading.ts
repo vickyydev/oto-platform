@@ -23,11 +23,13 @@
  * park's real clauses (tests/payroll/cases/clause-readings.cases.ts) runs it.
  */
 import { z } from "zod";
+import { isChildcareClause, isCorrectedRevenueClause, type RevenuePark } from "./payroll-clause-policy";
 
 export const NOT_BONUS_KINDS = ["service-charge", "salary-change", "benefit", "other"] as const;
 export type NotBonusKind = typeof NOT_BONUS_KINDS[number];
 
 export interface ClauseBonusTerms {
+  childcarePool?: true;
   /** What the bonus is based on. */
   basis: "percent-of-revenue" | "baht-per-unit";
   /** percent-of-revenue: the percent (0.2 means 0.2 %). */
@@ -35,7 +37,7 @@ export interface ClauseBonusTerms {
   /** baht-per-unit: baht for each unit. */
   bahtPerUnit: number | null;
   /** percent-of-revenue: which sales, in the clause's words and as the park's stream keys. */
-  revenue: { described: string; streams: string[]; branches: "all" | "home" } | null;
+  revenue: { described: string; streams: string[]; branches: RevenuePark } | null;
   /** baht-per-unit: what is counted and who types it each month. */
   unit: { described: string; inputKey: string; counted: "team-total" | "per-person" } | null;
   /** The sales (the same sales the percent is of) must EXCEED this amount, or nothing is paid. */
@@ -70,10 +72,11 @@ export interface ClauseReading {
 
 const nullableNumber = z.number().finite().nonnegative().nullable();
 const bonusSchema = z.object({
+  childcarePool: z.literal(true).optional(),
   basis: z.enum(["percent-of-revenue", "baht-per-unit"]),
   percent: nullableNumber,
   bahtPerUnit: nullableNumber,
-  revenue: z.object({ described: z.string().max(200), streams: z.array(z.string().max(40)).max(40), branches: z.enum(["all", "home"]) }).nullable(),
+  revenue: z.object({ described: z.string().max(200), streams: z.array(z.string().max(40)).max(40), branches: z.union([z.enum(["all", "home", "assigned"]), z.string().regex(/^branch:[\w-]{1,100}$/)]) }).nullable(),
   unit: z.object({ described: z.string().max(200), inputKey: z.string().max(40), counted: z.enum(["team-total", "per-person"]) }).nullable(),
   threshold: nullableNumber,
   cap: nullableNumber,
@@ -109,7 +112,7 @@ export function parseReading(raw: unknown): { reading: ClauseReading } | { error
  * the only values it may name. Kept free of number limits, which structured
  * output does not take; `parseReading` checks them after.
  */
-export function readingJsonSchema(streamKeys: string[], poolKeys: string[]): Record<string, unknown> {
+export function readingJsonSchema(streamKeys: string[], poolKeys: string[], branchIds: string[] = []): Record<string, unknown> {
   const nullable = (schema: Record<string, unknown>) => ({ anyOf: [schema, { type: "null" }] });
   const stringList = streamKeys.length ? { type: "array", items: { type: "string", enum: streamKeys } } : { type: "array", items: { type: "string" } };
   const bonus = {
@@ -120,7 +123,7 @@ export function readingJsonSchema(streamKeys: string[], poolKeys: string[]): Rec
       percent: nullable({ type: "number" }),
       bahtPerUnit: nullable({ type: "number" }),
       revenue: nullable({ type: "object", additionalProperties: false, required: ["described", "streams", "branches"], properties: {
-        described: { type: "string" }, streams: stringList, branches: { type: "string", enum: ["all", "home"] } } }),
+        described: { type: "string" }, streams: stringList, branches: { type: "string", enum: ["all", "home", "assigned", ...branchIds.map(id => `branch:${id}`)] } } }),
       unit: nullable({ type: "object", additionalProperties: false, required: ["described", "inputKey", "counted"], properties: {
         described: { type: "string" }, inputKey: { type: "string" }, counted: { type: "string", enum: ["team-total", "per-person"] } } }),
       threshold: nullable({ type: "number" }),
@@ -211,8 +214,10 @@ export function checkReading(clauseText: string, reading: ClauseReading, source:
         plainWords: "Service charge: paid by the branch's service-charge policy, not by this clause." };
     }
     if (source === "ai" && !b.joinPool) {
-      const used = [b.percent, b.bahtPerUnit, b.threshold, b.cap].filter((n): n is number => n !== null);
-      const missing = used.filter((n) => !written(n));
+      const ownerRate = clauseText.includes(part.quote) && (isChildcareClause(part.quote) ? 20
+        : isCorrectedRevenueClause(part.quote) ? 0.2 : null);
+      const used = [b.percent === ownerRate ? null : b.percent, b.bahtPerUnit, b.threshold, b.cap];
+      const missing = used.filter((n): n is number => n !== null && !written(n));
       if (missing.length) {
         notes.push(`"${part.quote}" used ${missing.map(baht).join(", ")}, which the clause does not say, so it needs a person.`);
         return { ...part, type: "needs-a-person", bonus: null, notBonusKind: null,
@@ -253,6 +258,7 @@ export interface ClauseReadingView {
   reason: string; who: string; at: string;
 }
 export interface ClausePersonView {
+  assignedCostCentres?: string[];
   employeeId: string; name: string; jobTitle: string | null; employeeStatus: string; homeBranchId: string | null;
   hasProfile: boolean; clauseText: string; clauseHash: string; state: ClauseState;
   /** The newest reading of the clause as it is now (any status). */
@@ -273,6 +279,7 @@ export interface ClauseReadingsView {
   canManage: boolean;
 }
 export interface ClauseExampleView {
+  childcare?: { branch: string; person: string; shiftDays: number; clockDays: number; amount: number }[];
   readingId: string; month: string; employed: boolean;
   lines: { ruleName: string; amount: number; formula: string; targetMet: boolean; joined: boolean }[];
   total: number;

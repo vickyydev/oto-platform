@@ -23,12 +23,14 @@
  */
 import type { CompanyIncentive, CompanyIncentiveKind } from "./engine/company-model";
 import { bonusParts, type ClauseBonusTerms, type ClauseReading } from "@shared/payroll-clause-reading";
+import { isChildcareClause } from "@shared/payroll-clause-policy";
 
 export const CLAUSE_RULE_PREFIX = "Contract · ";
 export interface ClauseRuleContext {
   employeeId: string;
   /** The person's home branch at the start date (for "the person's own park"). */
   homeBranchId: string | null;
+  assignedBranchIds?: string[];
   /** Every branch with payroll details (for "all parks"). */
   branchIds: string[];
   /** The park group's live sales streams. */
@@ -82,6 +84,11 @@ export function rulesFromReading(reading: ClauseReading, ctx: ClauseRuleContext)
   for (const part of bonusParts(reading)) {
     const index = reading.parts.indexOf(part), b = part.bonus!;
     const where = `Part ${index + 1} ("${part.quote}")`;
+    if (b.childcarePool && (!isChildcareClause(part.quote) || b.percent !== 20 || b.sharing !== "team" || b.split !== "days-worked"
+      || b.joinPool || b.cap !== null || b.threshold !== null || b.revenue?.branches !== "all")) {
+      problems.push(`${where}: the Childcare Team uses one 20% pool per park, shared by days worked.`); continue;
+    }
+    if (b.childcarePool && plans.some(p => p.terms?.childcarePool || p.poolKey === CHILDCARE_KEY)) continue;
     if (b.joinPool) {
       const pool = ctx.pools.find((p) => p.ruleId === b.joinPool);
       if (!pool) { problems.push(`${where} joins a team pool that is not approved any more. Correct the reading.`); continue; }
@@ -98,8 +105,12 @@ export function rulesFromReading(reading: ClauseReading, ctx: ClauseRuleContext)
       const unknown = b.revenue.streams.filter((s) => !live.has(s));
       if (unknown.length) { problems.push(`${where}: ${unknown.join(", ")} is not one of the park group's live sales streams.`); continue; }
       streams = sorted(b.revenue.streams);
-      branches = b.revenue.branches === "home" ? (ctx.homeBranchId ? [ctx.homeBranchId] : []) : sorted(ctx.branchIds);
-      if (!branches.length) { problems.push(`${where}: the person has no home branch to take sales from.`); continue; }
+      const scope = b.revenue.branches;
+      if (scope === "assigned") branches = sorted((ctx.assignedBranchIds ?? []).filter(id => ctx.branchIds.includes(id)));
+      else if (scope === "home") branches = ctx.homeBranchId && ctx.branchIds.includes(ctx.homeBranchId) ? [ctx.homeBranchId] : [];
+      else if (scope === "all") branches = sorted(ctx.branchIds);
+      else branches = ctx.branchIds.filter(id => scope === `branch:${id}`);
+      if (!branches.length) { problems.push(`${where}: this selection has no trading park to take sales from. Choose a park or check the person's assignment.`); continue; }
     }
     if (kind.kind === "unit-pool" || kind.kind === "unit") {
       inputKey = b.unit?.inputKey.trim().toLowerCase() ?? "";
@@ -114,16 +125,20 @@ export function rulesFromReading(reading: ClauseReading, ctx: ClauseRuleContext)
       : kind.kind === "unit-pool" && b.sharing === "team" ? `${fmt(rate)} baht per ${described}, shared by ${team}`
       : `${fmt(rate)} baht per ${described}`) + (b.cap !== null ? `, at most ${fmt(b.cap)}` : "")).slice(0, 200);
     const owner = kind.kind === "revenue" || kind.kind === "unit" || (kind.kind === "unit-pool" && b.sharing === "own") ? ctx.employeeId : null;
-    const poolKey = JSON.stringify({ kind: kind.kind, rate, inputKey, streams, branches, target: b.threshold, cap: b.cap, team: team.toLowerCase().replace(/\s+/g, " "), owner });
+    const poolKey = b.childcarePool ? CHILDCARE_KEY : JSON.stringify({ kind: kind.kind, rate, inputKey, streams, branches, target: b.threshold, cap: b.cap, team: team.toLowerCase().replace(/\s+/g, " "), owner });
     const existing = owner === null ? ctx.pools.find((p) => p.poolKey === poolKey) : undefined;
     if (existing) { plans.push({ part: index, poolKey, name: existing.name, join: { ruleId: existing.ruleId }, terms: null }); continue; }
     plans.push({ part: index, poolKey, name, join: null, terms: {
       name, kind: kind.kind, staffIds: [], base: { branches, streams, addBack: [] }, rate, inputKey,
+      ...(b.childcarePool ? { childcarePool: true as const } : {}),
+      ...(kind.kind === "revenue" && b.revenue?.branches === "assigned" ? { assignedRevenue: { employeeId: ctx.employeeId, parks: sorted(ctx.branchIds) } } : {}),
       target: b.threshold, cap: b.cap, effectiveFrom: "", effectiveTo: null, kpiOperator: "lt", kpiTarget: 0, enabled: true,
     } });
   }
   return { plans, problems };
 }
+
+const CHILDCARE_KEY = JSON.stringify({ kind: "team-days", team: "childcare team", owner: null, policy: "per-park-childcare" });
 
 /** What a person must type each month for a reading's rules, in plain words. */
 export function monthlyInputsOf(plans: ClauseRulePlan[]): string[] {
