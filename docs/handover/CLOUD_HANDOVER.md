@@ -33,6 +33,12 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
+**28 November 2026.** The park handover has been reconciled with the service inventory. Administrator recovery is live on both servers. Its source reconciliation is the next landing. [Arrival checks](../progress/STATUS.md)
+
+**25 November 2026, Claude takeover.** The [handover guide](CLAUDE_TAKEOVER_2026-11-25.md) is the entry point for the next agent.
+
+**25 November 2026.** The [park operations checkpoint](../progress/PARK_CHECKPOINT_2026-11-25.md) identifies the current Jira status, environment, last verified outcome and next acceptance step across HR, payments, BEO, the staff tablet and gates. It includes the isolated production recovery release whose source PR remains open.
+
 SCRUM-1070 reached production. The 24 November Reception Closing run was corrected and independently read back.
 
 **24 November 2026, SCRUM-68.** Sprint 2 now holds the [ten gate and POS acceptance checks](../qa/proof-2026-11-23/SCRUM-68/gate-visit.md). Overtime exit handling conflicts with the implemented adult exit rule. The installed Android app handled the reader exchange. Physical commissioning remains paused.
