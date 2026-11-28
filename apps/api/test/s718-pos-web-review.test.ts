@@ -80,7 +80,8 @@ describe('SCRUM-718 real API safety review', () => {
     const r = await fetch(`${origin}/api/auth/sign-in`, { method: 'POST', headers: {
       origin: 'https://foreign.example', 'content-type': 'application/json',
     }, body: JSON.stringify(ADMIN) });
-    expect(r.status).toBe(403); expect((await r.json()).error.code).toBe('ORIGIN_NOT_ALLOWED');
+    expect(r.status).toBe(403);
+    expect(await r.json()).toMatchObject({ error: { code: 'ORIGIN_NOT_ALLOWED' } });
     expect(r.headers.get('access-control-allow-origin')).toBeNull();
   });
 });
