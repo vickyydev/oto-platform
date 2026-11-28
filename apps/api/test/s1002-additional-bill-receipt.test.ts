@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { and, asc, eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { auditLog, box, branch, paymentAttempt, printJob, receiptSeries, sale, saleLine, station } from '@oto/db';
+import { box, branch, paymentAttempt, printJob, receiptSeries, sale, saleLine, station } from '@oto/db';
 import { deriveId, newId, type PartyAdditionalBill, type PartyDetailAnswer, type PartySettleAnswer, type PartyWriteAnswer } from '@oto/shared';
 import { syncBeoAdditionalCharges } from '../src/services/beo-additional-charges';
 import { branchClockFor, currentBusinessDate, getEndOfDay } from '../src/services/end-of-day';
