@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { KeyRound, Loader2, LogIn, Phone as PhoneIcon, type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ApiError } from '@/api/client';
@@ -6,6 +6,7 @@ import { authApi } from '@/api/platform';
 import { useSession } from '@/auth/SessionContext';
 
 type Mode = 'signin' | 'setup' | 'reset';
+type RecoveryStep = 'phone' | 'requested' | 'code';
 
 const FIELD =
   'w-full h-14 rounded-2xl border border-input bg-background px-4 text-lg focus:outline-none focus:ring-2 focus:ring-ring';
@@ -25,7 +26,7 @@ function FieldLabel({ icon: Icon, children }: { icon: LucideIcon; children: stri
  * list, the field says what it accepts and lets the server be the authority on
  * what a number means.
  */
-function PhoneField({ value, onChange }: { value: string; onChange: (next: string) => void }) {
+function PhoneField({ value, onChange, disabled }: { value: string; onChange: (next: string) => void; disabled?: boolean }) {
   return (
     <>
       <FieldLabel icon={PhoneIcon}>Phone number</FieldLabel>
@@ -34,6 +35,7 @@ function PhoneField({ value, onChange }: { value: string; onChange: (next: strin
         inputMode="tel"
         autoComplete="username"
         value={value}
+        disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
         placeholder="090 000 0001"
         className={FIELD}
@@ -56,17 +58,24 @@ export function SignInPanel() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
-  const [codeSent, setCodeSent] = useState(false);
+  const [step, setStep] = useState<RecoveryStep>('phone');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-
-  useEffect(() => {
-    setError(null);
-    setNotice(null);
-    setCodeSent(false);
+  function changeMode(next: Mode) {
+    setMode(next);
+    setPassword('');
     setCode('');
-  }, [mode]);
+    setError(null);
+    setStep('phone');
+  }
+
+  function editRecoveryPhone(next: string) {
+    setPhone(next);
+    setStep('phone');
+    setCode('');
+    setPassword('');
+    setError(null);
+  }
 
   const doSignIn = async (e?: FormEvent) => {
     e?.preventDefault();
@@ -91,17 +100,16 @@ export function SignInPanel() {
     }
   };
 
-  const sendCode = async () => {
+  const sendCode = async (e?: FormEvent) => {
+    e?.preventDefault();
     if (busy || !phone.trim()) return;
     setBusy(true);
     setError(null);
     try {
       if (mode === 'setup') await authApi.setupStart(phone.trim());
       else await authApi.resetRequest(phone.trim());
-      setCodeSent(true);
-      setNotice(mode === 'setup'
-        ? 'If this account is waiting for setup, a code will arrive by SMS.'
-        : 'If this number is eligible, a reset code will arrive by SMS. It lasts 10 minutes.');
+      // The public acknowledgement also covers requests that send no SMS.
+      setStep('requested');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not send the code');
     } finally {
@@ -111,7 +119,7 @@ export function SignInPanel() {
 
   const completeCodeFlow = async (e?: FormEvent) => {
     e?.preventDefault();
-    if (busy || !phone.trim() || code.length !== 6 || password.length < 8) return;
+    if (step !== 'code' || busy || !phone.trim() || code.length !== 6 || password.length < 8) return;
     setBusy(true);
     setError(null);
     try {
@@ -135,7 +143,7 @@ export function SignInPanel() {
           ? 'Your phone number and password open every app you have access to.'
           : mode === 'setup'
             ? 'First shift? Choose a password and confirm your phone.'
-            : 'We text a code to the phone on your account.'}
+            : 'Request a reset code with your registered phone number.'}
       </p>
 
       {mode === 'signin' && (
@@ -151,7 +159,6 @@ export function SignInPanel() {
             className={FIELD}
           />
           {error && <p className="text-sm text-destructive">{error}</p>}
-          {notice && <p className="text-sm text-foreground/60">{notice}</p>}
           <Button
             type="submit"
             size="lg"
@@ -162,10 +169,10 @@ export function SignInPanel() {
             {busy ? 'Signing in…' : 'Sign in'}
           </Button>
           <div className="flex flex-wrap justify-between gap-2 text-sm text-foreground/50 mt-1">
-            <button type="button" className="hover:text-foreground" onClick={() => setMode('setup')}>
+            <button type="button" disabled={busy} className="hover:text-foreground" onClick={() => changeMode('setup')}>
               First shift? Set up account
             </button>
-            <button type="button" className="hover:text-foreground" onClick={() => setMode('reset')}>
+            <button type="button" disabled={busy} className="hover:text-foreground" onClick={() => changeMode('reset')}>
               Forgot password?
             </button>
           </div>
@@ -173,23 +180,48 @@ export function SignInPanel() {
       )}
 
       {(mode === 'setup' || mode === 'reset') && (
-        <form onSubmit={completeCodeFlow} className="flex flex-col gap-3">
-          <PhoneField value={phone} onChange={setPhone} />
-          {!codeSent ? (
+        <form onSubmit={step === 'phone' ? sendCode : completeCodeFlow} className="flex flex-col gap-3">
+          <PhoneField value={phone} onChange={editRecoveryPhone} disabled={busy} />
+          {step === 'phone' && (
             <Button
-              type="button"
+              type="submit"
               size="lg"
               className="h-14 text-lg rounded-2xl w-full mt-1"
-              onClick={sendCode}
               disabled={busy || !phone.trim()}
             >
               {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Send code'}
             </Button>
-          ) : (
+          )}
+          {step === 'requested' && (
+            <>
+              <p role="status" className="text-sm text-foreground/70">
+                Check your text messages. Continue if you have a code for this request.
+              </p>
+              <Button type="button" size="lg" className="h-14 text-lg rounded-2xl w-full" disabled={busy}
+                onClick={() => { setError(null); setStep('code'); }}>
+                I received my code
+              </Button>
+              <details className="text-sm text-foreground/70">
+                <summary className="cursor-pointer font-semibold">No code?</summary>
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  <li>Check the number above. If it is missing from your staff account, ask your manager to add it.</li>
+                  {mode === 'setup'
+                    ? <li>If you already set up your account, sign in or use Forgot password.</li>
+                    : <li>If your number needs confirmation, ask your manager for help confirming it.</li>}
+                  <li>If your account is switched off, ask your manager to restore access.</li>
+                </ul>
+                <button type="button" disabled={busy} onClick={sendCode} className="mt-3 underline">
+                  Request another code
+                </button>
+              </details>
+            </>
+          )}
+          {step === 'code' && (
             <>
               <label className="text-sm font-semibold text-foreground/60 mt-1">6-digit code</label>
               <input
                 inputMode="numeric"
+                autoComplete="one-time-code"
                 maxLength={6}
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
@@ -223,12 +255,12 @@ export function SignInPanel() {
               </Button>
             </>
           )}
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          {notice && <p className="text-sm text-foreground/60">{notice}</p>}
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <button
             type="button"
             className="text-sm text-foreground/50 hover:text-foreground mt-1 self-center"
-            onClick={() => setMode('signin')}
+            disabled={busy}
+            onClick={() => changeMode('signin')}
           >
             Back to sign in
           </button>
