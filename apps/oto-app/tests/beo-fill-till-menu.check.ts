@@ -40,6 +40,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { createServer as createHttpServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
+import { serveUnpaidPartyBilling } from "./fixtures/unpaid-party-till";
 import express, { type NextFunction, type Request, type Response } from "express";
 import pg from "pg";
 import * as React from "react";
@@ -201,8 +202,6 @@ const app = express();
 app.use(express.json({ limit: "1mb" }));
 app.use((req, res, next) => (req.get("x-test-as") ? fakeAuth(req, res, next) : next()));
 registerAIRoutes(app, fakeAuth, {
-  // These new fixture parties have no billed or paid items at the till.
-  paidLines: async () => new Map(),
   ai,
   readSetting: async () => null,
   inboxConfirmation: async (_req, conversationId) => inbox.get(conversationId) ?? { ok: false, reason: "inbox_unreachable" },
@@ -214,6 +213,7 @@ const server = createHttpServer(app);
 servers.push(server);
 await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", () => resolve()));
 const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+serveUnpaidPartyBilling(app, base, Object.values(ev));
 async function post(path: string, body: unknown) {
   const response = await fetch(`${base}${path}`, { method: "POST", headers: { "content-type": "application/json", "x-test-as": "manager" }, body: JSON.stringify(body) });
   return { status: response.status, body: (await response.json().catch(() => null)) as any };

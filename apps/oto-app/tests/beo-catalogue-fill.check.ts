@@ -79,9 +79,9 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { createServer as createHttpServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
+import { serveUnpaidPartyBilling } from "./fixtures/unpaid-party-till";
 import express, { type NextFunction, type Request, type Response } from "express";
 import pg from "pg";
-import { noQuoteAnswer } from "./fixtures/till-billing";
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
@@ -446,15 +446,6 @@ function fakeAuth(req: Request, res: Response, next: NextFunction) {
 
 const servers: Server[] = [];
 const app = express();
-// These new parties have no paid till lines. Exercise the normal billing
-// reader during Save with the same loopback platform contract as the till tests.
-const fixtureProvisionKey = randomUUID();
-const fixturePartyIds = new Set(Object.values(ev));
-app.get("/otoapp/parties/:eventId/billing", (req, res) => {
-  if (req.get("authorization") !== `Bearer ${fixtureProvisionKey}`) return res.sendStatus(401);
-  if (!fixturePartyIds.has(req.params.eventId)) return res.sendStatus(404);
-  return res.json({ ...noQuoteAnswer(req.params.eventId), beoLines: [] });
-});
 app.use(express.json({ limit: "1mb" }));
 // The BEO's own routes (its read and its Save) take the session the app's passport would give.
 app.use((req, res, next) => (req.get("x-test-as") ? fakeAuth(req, res, next) : next()));
@@ -467,8 +458,7 @@ const server = createHttpServer(app);
 servers.push(server);
 await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", () => resolve()));
 const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-process.env.PLATFORM_API_URL = base;
-process.env.OTOAPP_PROVISION_KEY = fixtureProvisionKey;
+serveUnpaidPartyBilling(app, base, Object.values(ev));
 
 async function send(method: string, path: string, body: unknown, as: "manager" | "staff" | "b" | null = "manager") {
   const response = await fetch(`${base}${path}`, {
