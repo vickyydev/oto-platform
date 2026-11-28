@@ -33,6 +33,7 @@ import "./payroll/cases/upload-formats.cases";
 import "./payroll/cases/ewf-upload-file.cases";
 import "./payroll/cases/payroll-profile.cases";
 import "./payroll/cases/single-shift.cases";
+import "./payroll/cases/clause-readings.cases";
 import { calculateCompanyEngine } from "../server/payroll/engine/company-calculations";
 import { calculateMonthEnd } from "../server/payroll/engine/run-calculations";
 import { approveCompanyRun, lockCompanyRun, newCompanyDraft } from "../server/payroll/engine/company-workflow";

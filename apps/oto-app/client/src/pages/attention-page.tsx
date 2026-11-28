@@ -152,6 +152,11 @@ const typeConfigs: Record<string, AttentionTypeConfig> = {
     icon: Clock,
     color: "text-red-600 dark:text-red-400",
   },
+  TIMEKEEPING_STUCK_CLOCK_IN: {
+    label: "Clock-out missing",
+    icon: Clock,
+    color: "text-red-600 dark:text-red-400",
+  },
 };
 
 function SeverityBadge({ severity }: { severity: string }) {
@@ -236,7 +241,8 @@ function AttentionItemCard({
   isSnoozing: boolean;
   readOnly: boolean;
 }) {
-  const config = typeConfigs[item.type] || typeConfigs.CONTRACT_NOT_SENT;
+  // SCRUM-1074: a kind with no entry of its own shows its own name, never another kind's label.
+  const config = typeConfigs[item.type] || { ...typeConfigs.CONTRACT_NOT_SENT, label: item.type.toLowerCase().replace(/_/g, " ").replace(/^./, (c: string) => c.toUpperCase()) };
   const Icon = config.icon;
   const employee = employees.find(e => e.id === item.employeeId);
   const fixAction = getFixAction(item);

@@ -12,6 +12,7 @@ import {
   computeTicketCartTotals,
   dropOffLineEntersCart,
   newId,
+  type GuestLanguage,
   type PaymentAttemptView,
   type TaxBreakdown as EngineTaxBreakdown,
   type TaxableCategory,
@@ -278,6 +279,12 @@ export interface SaleCartPayload {
   memberId?: string | null;
   customerPhone?: string | null;
   customerNickname?: string | null;
+  /**
+   * SCRUM-1077 — the language the guest chose in this sale, for the gate's
+   * messages on its bands. Set only on the commit, never on a quote, and
+   * omitted when nobody chose (`lib/guestLanguage.ts`).
+   */
+  guestLanguage?: GuestLanguage | null;
   /** What the till last showed as the amount due. See `lineTotalSatang`. */
   expectedTotalSatang: number;
   /**

@@ -43,6 +43,7 @@ import { recordRunAudit } from "./run-audit";
 import { frozenSnapshot, lifecycleView } from "./run-view";
 import { engineRefusal, payrollPeople, requireMonth } from "./inputs";
 import { loadPayrollWorld, PAY_READER, sourceSignature, type RunRef } from "./world";
+import { clauseMonthMarks } from "./clause-readings";
 import { calculateCompanyEngine } from "./engine/company-calculations";
 import { openCheckFixProblems, recordAttendanceReview } from "./engine/company-issue-review";
 import { newCompanyDraft } from "./engine/company-workflow";
@@ -177,6 +178,33 @@ export async function recordReview(tenantId: string, actor: PayrollActor, entity
   });
 }
 
+/**
+ * SCRUM-1073: confirm every attendance day of the month that still waits for a decision, in one step with
+ * one reason. "Confirm" is the same decision the one-day dialog saves (the issues count as they are); days
+ * already decided are left as they are. One audit row records how many days it covered.
+ */
+export async function confirmAllAttendance(tenantId: string, actor: PayrollActor, entityId: string, monthValue: string, body: Record<string, unknown>) {
+  const month = requireMonth(monthValue);
+  const reason = requireReason(body.reason);
+  await entityOf(db, tenantId, entityId);
+  const loaded = await loadPayrollWorld(tenantId, month, PAY_READER).catch(engineRefusal);
+  const waiting = loaded.world.attendance.filter((d) => d.date.startsWith(month) && d.exceptions.some((e) => e.resolution === null));
+  return db.transaction(async (tx) => {
+    const { run, version } = await editableVersion(tx, tenantId, entityId, month);
+    const decided = new Set((await tx.select({ key: payrollRunAttendanceReviews.attendanceDayKey }).from(payrollRunAttendanceReviews)
+      .where(and(eq(payrollRunAttendanceReviews.tenantId, tenantId), eq(payrollRunAttendanceReviews.runVersionId, version.id)))).map((r) => r.key));
+    const days = waiting.filter((d) => !decided.has(d.id));
+    if (!days.length) throw new PayrollRefusal(400, "No attendance day is waiting for a decision.");
+    for (let i = 0; i < days.length; i += 200) {
+      await tx.insert(payrollRunAttendanceReviews).values(days.slice(i, i + 200).map((day) => ({ tenantId, runVersionId: version.id, attendanceDayKey: day.id, employeeId: day.staffId,
+        action: "confirm" as const, clockIn: null, clockOut: null, reason, actorUserId: actor.userId, actorName: actor.name })));
+    }
+    await recordRunAudit(tx, tenantId, actor, { runId: run.id, versionId: version.id, version: version.version, action: "Attendance decision", subject: "attendance", subjectId: "all-remaining", reason,
+      oldValue: null, newValue: { action: "confirm", days: days.length } });
+    return { confirmed: days.length, version: version.version };
+  });
+}
+
 async function payrollEmployee(tx: Tx, tenantId: string, employeeId: string) {
   const [row] = await tx.select({ id: employees.id }).from(payrollProfiles)
     .innerJoin(employees, and(eq(employees.id, payrollProfiles.employeeId), eq(employees.tenantId, tenantId)))
@@ -261,6 +289,8 @@ export async function previewMonth(tenantId: string, entityId: string, monthValu
   const month = requireMonth(monthValue);
   const entity = await entityOf(db, tenantId, entityId);
   const started = performance.now();
+  // SCRUM-1075: whose pay has a line from a contract clause, and whose clause still waits for a person (outside the calculation and its signature).
+  const marks = clauseMonthMarks(tenantId).catch(() => undefined);
   const loaded = await loadPayrollWorld(tenantId, month, PAY_READER).catch(engineRefusal);
   const loadedAt = performance.now();
   const ref = loaded.runs.get(entity.id);
@@ -288,5 +318,6 @@ export async function previewMonth(tenantId: string, entityId: string, monthValu
     frozen: !!frozen,
     stale: ref?.status === "gm-confirmed" && ref.approvedSignature !== signature,
     openProblems: result ? openCheckFixProblems(result, loaded.doc.runs[`${entity.id}:${month}`]) : 0,
+    clauseMarks: await marks,
   };
 }

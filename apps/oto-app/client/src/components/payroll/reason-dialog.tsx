@@ -5,6 +5,7 @@ import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, Dia
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { errorList, errorText } from "@/lib/payroll/api";
+import { fixHint } from "@/lib/payroll/fix-hints";
 
 /**
  * Every payroll save asks why (the prototype's rule: each change lands on the
@@ -54,6 +55,8 @@ export function ReasonDialog({ open, onOpenChange, title, description, confirmLa
         {error != null && <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
           <p className="flex items-start gap-2"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />{errorText(error)}</p>
           {errorList(error).length > 0 && <ul className="mt-2 list-disc space-y-0.5 pl-6 text-xs">{errorList(error).map((item) => <li key={item}>{item}</li>)}</ul>}
+          {/* SCRUM-1073: no refusal without its way forward. */}
+          {fixHint(errorText(error)).text && <p className="mt-2 text-xs" data-testid="refusal-fix">How to fix: {fixHint(errorText(error)).text}</p>}
         </div>}
       </DialogBody>
       <DialogFooter>

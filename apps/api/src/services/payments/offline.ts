@@ -3,6 +3,7 @@ import { band, bandEvent, child, device, paymentAttempt, sale, saleLine, saleExt
 import {
   CartBandHolderSchema,
   CartPrepaidSchema,
+  GuestLanguageSchema,
   OfflinePriceBasisSchema,
   PRICING_ENGINE_VERSION,
   LEGACY_SATANG_ENGINE_VERSION,
@@ -131,6 +132,13 @@ const OfflineCartSchema = z.object({
   memberId: z.string().uuid().nullish(),
   /** SCRUM-762 — the family's number, as the till's own commit carries it. Optional: an older box sends none. */
   customerPhone: z.string().max(40).nullish(),
+  /**
+   * SCRUM-1077 — the language the guest chose at the till, as the till's own
+   * commit carries it. Optional: an older till or box sends none, and
+   * anything that is not one of the five is kept as none, never a refusal of
+   * a sale whose money is already taken.
+   */
+  guestLanguage: GuestLanguageSchema.nullish().catch(null),
   visitId: z.string().uuid().nullish(),
   channel: z.enum(['till', 'fnb', 'shop']).optional(),
   tier: z.string().max(40).optional(),
@@ -573,6 +581,7 @@ export async function replayOfflineSale(
     branchId: scope.branchId,
     memberId: cart.memberId ?? null,
     customerPhone: cart.customerPhone ?? null,
+    guestLanguage: cart.guestLanguage ?? null,
     visitId: cart.visitId ?? null,
     ...(cart.channel ? { channel: cart.channel } : {}),
     ...(cart.tier ? { tier: cart.tier } : {}),

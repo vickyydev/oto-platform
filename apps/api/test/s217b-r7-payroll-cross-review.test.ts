@@ -239,6 +239,14 @@ describe.skipIf(!HAS_APP)('round 7 independent payroll ownership review', () => 
       'get /api/payroll/setup/rewards hr.view_salary',
       'post /api/payroll/setup/rewards/service-policies/:branchId hr.manage_payroll',
       'post /api/payroll/setup/rewards/incentives hr.manage_payroll',
+      // SCRUM-1075: incentive clauses read with AI, corrected, calculated as a worked example by the
+      // engine, approved into dated rules (hr.manage_payroll) or marked not an incentive.
+      'get /api/payroll/setup/rewards/clauses hr.view_salary',
+      'post /api/payroll/setup/rewards/clauses/:employeeId/read hr.manage_payroll',
+      'post /api/payroll/setup/rewards/clauses/:employeeId/correct hr.manage_payroll',
+      'get /api/payroll/setup/rewards/clause-readings/:readingId/example hr.view_salary',
+      'post /api/payroll/setup/rewards/clause-readings/:readingId/approve hr.manage_payroll',
+      'post /api/payroll/setup/rewards/clause-readings/:readingId/not-incentive hr.manage_payroll',
       'get /api/payroll/feeds/:month hr.view_salary',
       'post /api/payroll/feeds/ot-bookings hr.manage_payroll',
       'post /api/payroll/feeds/leave-valuations hr.manage_payroll',
@@ -246,6 +254,7 @@ describe.skipIf(!HAS_APP)('round 7 independent payroll ownership review', () => 
       'put /api/payroll/feeds/offboarding/:employeeId hr.manage_payroll',
       'get /api/payroll/month-end/:entityId/:month hr.view_salary',
       'post /api/payroll/month-end/:entityId/:month/run hr.manage_payroll',
+      'post /api/payroll/month-end/:entityId/:month/attendance-confirm-all hr.manage_payroll',
       'put /api/payroll/month-end/:entityId/:month/attendance/:dayKey hr.manage_payroll',
       'post /api/payroll/month-end/:entityId/:month/manual hr.manage_payroll',
       'post /api/payroll/month-end/:entityId/:month/manual/:id/remove hr.manage_payroll',

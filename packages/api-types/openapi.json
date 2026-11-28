@@ -3777,6 +3777,8 @@
                 "admin:booth:manage",
                 "admin:booth:publish",
                 "admin:booth:staff_assign",
+                "admin:gate_message:read",
+                "admin:gate_message:manage",
                 "admin:health:read",
                 "admin:ops:manage",
                 "console:alert:manage",
@@ -8433,6 +8435,17 @@
                     "maxLength": 120,
                     "nullable": true
                   },
+                  "guestLanguage": {
+                    "type": "string",
+                    "enum": [
+                      "en",
+                      "zh",
+                      "th",
+                      "ru",
+                      "fr"
+                    ],
+                    "nullable": true
+                  },
                   "expectedTotalSatang": {
                     "type": "integer",
                     "minimum": 0
@@ -9115,6 +9128,17 @@
                     "maxLength": 120,
                     "nullable": true
                   },
+                  "guestLanguage": {
+                    "type": "string",
+                    "enum": [
+                      "en",
+                      "zh",
+                      "th",
+                      "ru",
+                      "fr"
+                    ],
+                    "nullable": true
+                  },
                   "expectedTotalSatang": {
                     "type": "integer",
                     "minimum": 0
@@ -9784,6 +9808,17 @@
                       "customerNickname": {
                         "type": "string",
                         "maxLength": 120,
+                        "nullable": true
+                      },
+                      "guestLanguage": {
+                        "type": "string",
+                        "enum": [
+                          "en",
+                          "zh",
+                          "th",
+                          "ru",
+                          "fr"
+                        ],
                         "nullable": true
                       },
                       "expectedTotalSatang": {
@@ -11115,6 +11150,17 @@
                   "customerNickname": {
                     "type": "string",
                     "maxLength": 120,
+                    "nullable": true
+                  },
+                  "guestLanguage": {
+                    "type": "string",
+                    "enum": [
+                      "en",
+                      "zh",
+                      "th",
+                      "ru",
+                      "fr"
+                    ],
                     "nullable": true
                   },
                   "expectedTotalSatang": {
@@ -34062,6 +34108,3761 @@
         "responses": {
           "200": {
             "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/branches/{branchId}/gate-messages": {
+      "get": {
+        "description": "What the gate readers at this park show for each case and language: the built-in wording with the park’s changes over it, the built-in wording itself, and the ordered languages shown.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "branchId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "branchId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "texts": {
+                      "type": "object",
+                      "properties": {
+                        "languages": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "en",
+                              "zh",
+                              "th",
+                              "ru",
+                              "fr"
+                            ]
+                          }
+                        },
+                        "cases": {
+                          "type": "object",
+                          "required": [
+                            "welcome",
+                            "goodbye",
+                            "NOT_A_BAND",
+                            "BOX_NOT_READY",
+                            "BAND_INVALID",
+                            "BAND_UNKNOWN_OFFLINE",
+                            "BAND_NOT_FOUND",
+                            "KID_BAND",
+                            "NO_GATE_ACCESS",
+                            "BAND_REVOKED",
+                            "ANTI_PASSBACK",
+                            "OVER_TIME",
+                            "GATE_BUSY",
+                            "GATE_NOT_READY"
+                          ],
+                          "properties": {
+                            "welcome": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "goodbye": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "NOT_A_BAND": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "BOX_NOT_READY": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "BAND_INVALID": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "BAND_UNKNOWN_OFFLINE": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "BAND_NOT_FOUND": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "KID_BAND": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "NO_GATE_ACCESS": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "BAND_REVOKED": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "ANTI_PASSBACK": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "OVER_TIME": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "GATE_BUSY": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "GATE_NOT_READY": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "labels": {
+                          "type": "object",
+                          "required": [
+                            "brand",
+                            "attention",
+                            "adult",
+                            "kid",
+                            "until",
+                            "left",
+                            "comeBackBefore",
+                            "ended",
+                            "credit"
+                          ],
+                          "properties": {
+                            "brand": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "attention": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "adult": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "kid": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "until": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "left": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "comeBackBefore": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "ended": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "credit": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "languages",
+                        "cases",
+                        "labels"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "defaults": {
+                      "type": "object",
+                      "properties": {
+                        "languages": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "en",
+                              "zh",
+                              "th",
+                              "ru",
+                              "fr"
+                            ]
+                          }
+                        },
+                        "cases": {
+                          "type": "object",
+                          "required": [
+                            "welcome",
+                            "goodbye",
+                            "NOT_A_BAND",
+                            "BOX_NOT_READY",
+                            "BAND_INVALID",
+                            "BAND_UNKNOWN_OFFLINE",
+                            "BAND_NOT_FOUND",
+                            "KID_BAND",
+                            "NO_GATE_ACCESS",
+                            "BAND_REVOKED",
+                            "ANTI_PASSBACK",
+                            "OVER_TIME",
+                            "GATE_BUSY",
+                            "GATE_NOT_READY"
+                          ],
+                          "properties": {
+                            "welcome": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "goodbye": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "NOT_A_BAND": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "BOX_NOT_READY": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "BAND_INVALID": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "BAND_UNKNOWN_OFFLINE": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "BAND_NOT_FOUND": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "KID_BAND": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "NO_GATE_ACCESS": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "BAND_REVOKED": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "ANTI_PASSBACK": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "OVER_TIME": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "GATE_BUSY": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "GATE_NOT_READY": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "labels": {
+                          "type": "object",
+                          "required": [
+                            "brand",
+                            "attention",
+                            "adult",
+                            "kid",
+                            "until",
+                            "left",
+                            "comeBackBefore",
+                            "ended",
+                            "credit"
+                          ],
+                          "properties": {
+                            "brand": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "attention": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "adult": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "kid": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "until": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "left": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "comeBackBefore": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "ended": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "credit": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "languages",
+                        "cases",
+                        "labels"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "changed": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "branchId",
+                    "texts",
+                    "defaults",
+                    "changed",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "description": "Make this park’s gate wording what the body says. Texts are cleaned (control characters other than line breaks removed) and limited to 200 characters, labels to 40; an entry equal to the built-in wording is not stored, so sending the default back resets it. Wording only: nothing here changes whether a gate opens. Audited as gate_message.update.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "languages": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "en",
+                        "zh",
+                        "th",
+                        "ru",
+                        "fr"
+                      ]
+                    },
+                    "minItems": 1,
+                    "maxItems": 5
+                  },
+                  "cases": {
+                    "type": "object",
+                    "required": [
+                      "welcome",
+                      "goodbye",
+                      "NOT_A_BAND",
+                      "BOX_NOT_READY",
+                      "BAND_INVALID",
+                      "BAND_UNKNOWN_OFFLINE",
+                      "BAND_NOT_FOUND",
+                      "KID_BAND",
+                      "NO_GATE_ACCESS",
+                      "BAND_REVOKED",
+                      "ANTI_PASSBACK",
+                      "OVER_TIME",
+                      "GATE_BUSY",
+                      "GATE_NOT_READY"
+                    ],
+                    "properties": {
+                      "welcome": {
+                        "type": "object",
+                        "required": [
+                          "en",
+                          "zh",
+                          "th",
+                          "ru",
+                          "fr"
+                        ],
+                        "properties": {
+                          "en": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "zh": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "th": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "ru": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "fr": {
+                            "type": "string",
+                            "maxLength": 400
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "goodbye": {
+                        "type": "object",
+                        "required": [
+                          "en",
+                          "zh",
+                          "th",
+                          "ru",
+                          "fr"
+                        ],
+                        "properties": {
+                          "en": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "zh": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "th": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "ru": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "fr": {
+                            "type": "string",
+                            "maxLength": 400
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "NOT_A_BAND": {
+                        "type": "object",
+                        "required": [
+                          "en",
+                          "zh",
+                          "th",
+                          "ru",
+                          "fr"
+                        ],
+                        "properties": {
+                          "en": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "zh": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "th": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "ru": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "fr": {
+                            "type": "string",
+                            "maxLength": 400
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "BOX_NOT_READY": {
+                        "type": "object",
+                        "required": [
+                          "en",
+                          "zh",
+                          "th",
+                          "ru",
+                          "fr"
+                        ],
+                        "properties": {
+                          "en": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "zh": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "th": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "ru": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "fr": {
+                            "type": "string",
+                            "maxLength": 400
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "BAND_INVALID": {
+                        "type": "object",
+                        "required": [
+                          "en",
+                          "zh",
+                          "th",
+                          "ru",
+                          "fr"
+                        ],
+                        "properties": {
+                          "en": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "zh": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "th": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "ru": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "fr": {
+                            "type": "string",
+                            "maxLength": 400
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "BAND_UNKNOWN_OFFLINE": {
+                        "type": "object",
+                        "required": [
+                          "en",
+                          "zh",
+                          "th",
+                          "ru",
+                          "fr"
+                        ],
+                        "properties": {
+                          "en": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "zh": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "th": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "ru": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "fr": {
+                            "type": "string",
+                            "maxLength": 400
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "BAND_NOT_FOUND": {
+                        "type": "object",
+                        "required": [
+                          "en",
+                          "zh",
+                          "th",
+                          "ru",
+                          "fr"
+                        ],
+                        "properties": {
+                          "en": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "zh": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "th": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "ru": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "fr": {
+                            "type": "string",
+                            "maxLength": 400
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "KID_BAND": {
+                        "type": "object",
+                        "required": [
+                          "en",
+                          "zh",
+                          "th",
+                          "ru",
+                          "fr"
+                        ],
+                        "properties": {
+                          "en": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "zh": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "th": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "ru": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "fr": {
+                            "type": "string",
+                            "maxLength": 400
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "NO_GATE_ACCESS": {
+                        "type": "object",
+                        "required": [
+                          "en",
+                          "zh",
+                          "th",
+                          "ru",
+                          "fr"
+                        ],
+                        "properties": {
+                          "en": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "zh": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "th": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "ru": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "fr": {
+                            "type": "string",
+                            "maxLength": 400
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "BAND_REVOKED": {
+                        "type": "object",
+                        "required": [
+                          "en",
+                          "zh",
+                          "th",
+                          "ru",
+                          "fr"
+                        ],
+                        "properties": {
+                          "en": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "zh": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "th": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "ru": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "fr": {
+                            "type": "string",
+                            "maxLength": 400
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "ANTI_PASSBACK": {
+                        "type": "object",
+                        "required": [
+                          "en",
+                          "zh",
+                          "th",
+                          "ru",
+                          "fr"
+                        ],
+                        "properties": {
+                          "en": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "zh": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "th": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "ru": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "fr": {
+                            "type": "string",
+                            "maxLength": 400
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "OVER_TIME": {
+                        "type": "object",
+                        "required": [
+                          "en",
+                          "zh",
+                          "th",
+                          "ru",
+                          "fr"
+                        ],
+                        "properties": {
+                          "en": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "zh": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "th": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "ru": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "fr": {
+                            "type": "string",
+                            "maxLength": 400
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "GATE_BUSY": {
+                        "type": "object",
+                        "required": [
+                          "en",
+                          "zh",
+                          "th",
+                          "ru",
+                          "fr"
+                        ],
+                        "properties": {
+                          "en": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "zh": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "th": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "ru": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "fr": {
+                            "type": "string",
+                            "maxLength": 400
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "GATE_NOT_READY": {
+                        "type": "object",
+                        "required": [
+                          "en",
+                          "zh",
+                          "th",
+                          "ru",
+                          "fr"
+                        ],
+                        "properties": {
+                          "en": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "zh": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "th": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "ru": {
+                            "type": "string",
+                            "maxLength": 400
+                          },
+                          "fr": {
+                            "type": "string",
+                            "maxLength": 400
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "labels": {
+                    "type": "object",
+                    "required": [
+                      "brand",
+                      "attention",
+                      "adult",
+                      "kid",
+                      "until",
+                      "left",
+                      "comeBackBefore",
+                      "ended",
+                      "credit"
+                    ],
+                    "properties": {
+                      "brand": {
+                        "type": "object",
+                        "required": [
+                          "en",
+                          "zh",
+                          "th",
+                          "ru",
+                          "fr"
+                        ],
+                        "properties": {
+                          "en": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "zh": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "th": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "ru": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "fr": {
+                            "type": "string",
+                            "maxLength": 80
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "attention": {
+                        "type": "object",
+                        "required": [
+                          "en",
+                          "zh",
+                          "th",
+                          "ru",
+                          "fr"
+                        ],
+                        "properties": {
+                          "en": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "zh": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "th": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "ru": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "fr": {
+                            "type": "string",
+                            "maxLength": 80
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "adult": {
+                        "type": "object",
+                        "required": [
+                          "en",
+                          "zh",
+                          "th",
+                          "ru",
+                          "fr"
+                        ],
+                        "properties": {
+                          "en": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "zh": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "th": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "ru": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "fr": {
+                            "type": "string",
+                            "maxLength": 80
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "kid": {
+                        "type": "object",
+                        "required": [
+                          "en",
+                          "zh",
+                          "th",
+                          "ru",
+                          "fr"
+                        ],
+                        "properties": {
+                          "en": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "zh": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "th": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "ru": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "fr": {
+                            "type": "string",
+                            "maxLength": 80
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "until": {
+                        "type": "object",
+                        "required": [
+                          "en",
+                          "zh",
+                          "th",
+                          "ru",
+                          "fr"
+                        ],
+                        "properties": {
+                          "en": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "zh": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "th": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "ru": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "fr": {
+                            "type": "string",
+                            "maxLength": 80
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "left": {
+                        "type": "object",
+                        "required": [
+                          "en",
+                          "zh",
+                          "th",
+                          "ru",
+                          "fr"
+                        ],
+                        "properties": {
+                          "en": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "zh": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "th": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "ru": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "fr": {
+                            "type": "string",
+                            "maxLength": 80
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "comeBackBefore": {
+                        "type": "object",
+                        "required": [
+                          "en",
+                          "zh",
+                          "th",
+                          "ru",
+                          "fr"
+                        ],
+                        "properties": {
+                          "en": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "zh": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "th": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "ru": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "fr": {
+                            "type": "string",
+                            "maxLength": 80
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "ended": {
+                        "type": "object",
+                        "required": [
+                          "en",
+                          "zh",
+                          "th",
+                          "ru",
+                          "fr"
+                        ],
+                        "properties": {
+                          "en": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "zh": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "th": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "ru": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "fr": {
+                            "type": "string",
+                            "maxLength": 80
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "credit": {
+                        "type": "object",
+                        "required": [
+                          "en",
+                          "zh",
+                          "th",
+                          "ru",
+                          "fr"
+                        ],
+                        "properties": {
+                          "en": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "zh": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "th": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "ru": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "fr": {
+                            "type": "string",
+                            "maxLength": 80
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "languages"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "branchId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "branchId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "texts": {
+                      "type": "object",
+                      "properties": {
+                        "languages": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "en",
+                              "zh",
+                              "th",
+                              "ru",
+                              "fr"
+                            ]
+                          }
+                        },
+                        "cases": {
+                          "type": "object",
+                          "required": [
+                            "welcome",
+                            "goodbye",
+                            "NOT_A_BAND",
+                            "BOX_NOT_READY",
+                            "BAND_INVALID",
+                            "BAND_UNKNOWN_OFFLINE",
+                            "BAND_NOT_FOUND",
+                            "KID_BAND",
+                            "NO_GATE_ACCESS",
+                            "BAND_REVOKED",
+                            "ANTI_PASSBACK",
+                            "OVER_TIME",
+                            "GATE_BUSY",
+                            "GATE_NOT_READY"
+                          ],
+                          "properties": {
+                            "welcome": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "goodbye": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "NOT_A_BAND": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "BOX_NOT_READY": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "BAND_INVALID": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "BAND_UNKNOWN_OFFLINE": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "BAND_NOT_FOUND": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "KID_BAND": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "NO_GATE_ACCESS": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "BAND_REVOKED": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "ANTI_PASSBACK": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "OVER_TIME": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "GATE_BUSY": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "GATE_NOT_READY": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "labels": {
+                          "type": "object",
+                          "required": [
+                            "brand",
+                            "attention",
+                            "adult",
+                            "kid",
+                            "until",
+                            "left",
+                            "comeBackBefore",
+                            "ended",
+                            "credit"
+                          ],
+                          "properties": {
+                            "brand": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "attention": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "adult": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "kid": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "until": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "left": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "comeBackBefore": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "ended": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "credit": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "languages",
+                        "cases",
+                        "labels"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "defaults": {
+                      "type": "object",
+                      "properties": {
+                        "languages": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "en",
+                              "zh",
+                              "th",
+                              "ru",
+                              "fr"
+                            ]
+                          }
+                        },
+                        "cases": {
+                          "type": "object",
+                          "required": [
+                            "welcome",
+                            "goodbye",
+                            "NOT_A_BAND",
+                            "BOX_NOT_READY",
+                            "BAND_INVALID",
+                            "BAND_UNKNOWN_OFFLINE",
+                            "BAND_NOT_FOUND",
+                            "KID_BAND",
+                            "NO_GATE_ACCESS",
+                            "BAND_REVOKED",
+                            "ANTI_PASSBACK",
+                            "OVER_TIME",
+                            "GATE_BUSY",
+                            "GATE_NOT_READY"
+                          ],
+                          "properties": {
+                            "welcome": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "goodbye": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "NOT_A_BAND": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "BOX_NOT_READY": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "BAND_INVALID": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "BAND_UNKNOWN_OFFLINE": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "BAND_NOT_FOUND": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "KID_BAND": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "NO_GATE_ACCESS": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "BAND_REVOKED": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "ANTI_PASSBACK": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "OVER_TIME": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "GATE_BUSY": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "GATE_NOT_READY": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "labels": {
+                          "type": "object",
+                          "required": [
+                            "brand",
+                            "attention",
+                            "adult",
+                            "kid",
+                            "until",
+                            "left",
+                            "comeBackBefore",
+                            "ended",
+                            "credit"
+                          ],
+                          "properties": {
+                            "brand": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "attention": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "adult": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "kid": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "until": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "left": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "comeBackBefore": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "ended": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "credit": {
+                              "type": "object",
+                              "required": [
+                                "en",
+                                "zh",
+                                "th",
+                                "ru",
+                                "fr"
+                              ],
+                              "properties": {
+                                "en": {
+                                  "type": "string"
+                                },
+                                "zh": {
+                                  "type": "string"
+                                },
+                                "th": {
+                                  "type": "string"
+                                },
+                                "ru": {
+                                  "type": "string"
+                                },
+                                "fr": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "languages",
+                        "cases",
+                        "labels"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "changed": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "branchId",
+                    "texts",
+                    "defaults",
+                    "changed",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }

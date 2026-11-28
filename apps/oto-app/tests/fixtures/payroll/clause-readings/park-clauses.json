@@ -1,0 +1,957 @@
+{
+  "about": "SCRUM-1075: the 14 incentive clause wordings on the park group's HR profiles (no names) and their readings as decided on staging on 26 November 2026. Stream keys are staging's; `streams` maps them onto the prototype's seed world, where `revenue`, `counts` and `units` are staging's typed ZZ TEST October figures.",
+  "month": "2026-10",
+  "streams": {
+    "zz-test-tickets": [
+      "tickets"
+    ],
+    "zz-test-birthday": [
+      "birthday-park"
+    ],
+    "zz-test-special-events": [
+      "special-events"
+    ],
+    "zz-test-nanny": [
+      "nanny"
+    ],
+    "zz-test-drop-off": [
+      "drop-off"
+    ],
+    "sc-pool": []
+  },
+  "revenue": {
+    "hkt-central": {
+      "streams": {
+        "tickets": {
+          "amount": 2675000,
+          "vat": 175000,
+          "serviceCharge": 0
+        },
+        "birthday-park": {
+          "amount": 642000,
+          "vat": 42000,
+          "serviceCharge": 0
+        },
+        "special-events": {
+          "amount": 214000,
+          "vat": 14000,
+          "serviceCharge": 0
+        },
+        "nanny": {
+          "amount": 160500,
+          "vat": 10500,
+          "serviceCharge": 0
+        },
+        "drop-off": {
+          "amount": 53500,
+          "vat": 3500,
+          "serviceCharge": 0
+        }
+      },
+      "discounts": {}
+    },
+    "hkt-chalong": {
+      "streams": {
+        "tickets": {
+          "amount": 1070000,
+          "vat": 70000,
+          "serviceCharge": 0
+        },
+        "birthday-park": {
+          "amount": 321000,
+          "vat": 21000,
+          "serviceCharge": 0
+        },
+        "special-events": {
+          "amount": 107000,
+          "vat": 7000,
+          "serviceCharge": 0
+        },
+        "nanny": {
+          "amount": 107000,
+          "vat": 7000,
+          "serviceCharge": 0
+        },
+        "drop-off": {
+          "amount": 0,
+          "vat": 0,
+          "serviceCharge": 0
+        }
+      },
+      "discounts": {}
+    }
+  },
+  "pools": {
+    "5cb8e2b4-a65a-4fb8-a8b8-d7c520ad1de2": {
+      "n": 1,
+      "part": 0
+    },
+    "eba694bd-028a-4968-875e-9680eefd7985": {
+      "n": 2,
+      "part": 0
+    },
+    "07fe5896-d3c6-4f9b-84a7-962e250a18cf": {
+      "n": 10,
+      "part": 1
+    }
+  },
+  "counts": {
+    "returned-flyers": 420,
+    "birthday-parties": 12
+  },
+  "units": {},
+  "wordings": [
+    {
+      "n": 1,
+      "text": "10 baht per returned flyer, devided by the Sale Booth Team",
+      "people": 2,
+      "sha256": "7a8f5f951fd080604132409f0b9be29e4bbf3ddf486d627b620e10e01d8b82c6",
+      "decision": "approved",
+      "source": "ai",
+      "reading": {
+        "parts": [
+          {
+            "type": "bonus",
+            "bonus": {
+              "cap": null,
+              "team": "Sale Booth Team",
+              "unit": {
+                "counted": "team-total",
+                "inputKey": "returned-flyers",
+                "described": "returned flyer"
+              },
+              "basis": "baht-per-unit",
+              "split": "equal",
+              "percent": null,
+              "revenue": null,
+              "sharing": "team",
+              "joinPool": null,
+              "threshold": null,
+              "bahtPerUnit": 10
+            },
+            "quote": "10 baht per returned flyer, devided by the Sale Booth Team",
+            "plainWords": "Pays 10 baht for every returned flyer counted in the month, and that pool is split among the Sale Booth Team. The clause does not say how the split is worked out, so it is treated as an equal division.",
+            "notBonusKind": null,
+            "needsPersonWhy": null
+          }
+        ],
+        "summary": "The employee shares in a pool of 10 baht for each returned flyer, with the pool divided among the Sale Booth Team.",
+        "questions": [
+          "Is the returned-flyer count one total for the whole Sale Booth Team, or counted for this employee alone?",
+          "Who counts as a member of the Sale Booth Team for this pool, and should the pool be split equally or by days worked?",
+          "Other clauses for the same Sale Booth Team pay 15 and 30 baht per returned flyer; is 10 baht correct for this employee?",
+          "Which park's returned flyers are counted for this employee?"
+        ]
+      },
+      "assignees": [
+        "hkc-036",
+        "hkc-037"
+      ],
+      "rules": [
+        {
+          "kind": "unit-pool",
+          "rate": 10,
+          "inputKey": "returned-flyers",
+          "target": null,
+          "cap": null,
+          "streams": [],
+          "branches": [],
+          "team": "sale booth team",
+          "name": "Contract · 10 baht per returned flyer, shared by Sale Booth Team"
+        }
+      ],
+      "amounts": {
+        "hkc-036": 2100,
+        "hkc-037": 2100
+      }
+    },
+    {
+      "n": 2,
+      "text": "15 baht per returned flyer, devided by the Sale Booth Team",
+      "people": 2,
+      "sha256": "3745ca1527adc8ef38ba06afe1f12ec2bfe5b7f0e03bb88eeffd7203d158c7ad",
+      "decision": "approved",
+      "source": "ai",
+      "reading": {
+        "parts": [
+          {
+            "type": "bonus",
+            "bonus": {
+              "cap": null,
+              "team": "Sale Booth Team",
+              "unit": {
+                "counted": "team-total",
+                "inputKey": "returned-flyers",
+                "described": "returned flyer"
+              },
+              "basis": "baht-per-unit",
+              "split": "equal",
+              "percent": null,
+              "revenue": null,
+              "sharing": "team",
+              "joinPool": null,
+              "threshold": null,
+              "bahtPerUnit": 15
+            },
+            "quote": "15 baht per returned flyer, devided by the Sale Booth Team",
+            "plainWords": "Pays 15 baht for every returned flyer counted in the month. The total is one pool divided among the Sale Booth Team.",
+            "notBonusKind": null,
+            "needsPersonWhy": null
+          }
+        ],
+        "summary": "Pays 15 baht for each returned flyer, with the resulting pool shared among the Sale Booth Team.",
+        "questions": [
+          "Is the returned-flyer count one number for the whole Sale Booth Team, or counted for this employee alone?",
+          "Who belongs to the Sale Booth Team, and is the pool split equally or by days worked?",
+          "Other clauses pay 10 and 30 baht per returned flyer to the same Sale Booth Team - is 15 baht correct for this employee?",
+          "Is the count for this employee's own park only, or for both parks together?"
+        ]
+      },
+      "assignees": [
+        "hkc-038",
+        "hch-018"
+      ],
+      "rules": [
+        {
+          "kind": "unit-pool",
+          "rate": 15,
+          "inputKey": "returned-flyers",
+          "target": null,
+          "cap": null,
+          "streams": [],
+          "branches": [],
+          "team": "sale booth team",
+          "name": "Contract · 15 baht per returned flyer, shared by Sale Booth Team"
+        }
+      ],
+      "amounts": {
+        "hkc-038": 3150,
+        "hch-018": 3150
+      }
+    },
+    {
+      "n": 3,
+      "text": "+ Service Charge After 3 month salary rises to 20 000 thb",
+      "people": 2,
+      "sha256": "2b22ff216a86a6e3b6d80e57f0740556d1df824983c9c75b1f50b0d7169987f7",
+      "decision": "not-incentive",
+      "why": "Decided on staging: not an incentive (service charge and a salary change are not bonuses).",
+      "source": "ai",
+      "reading": {
+        "parts": [
+          {
+            "type": "not-a-bonus",
+            "bonus": null,
+            "quote": "+ Service Charge",
+            "plainWords": "Service charge is paid out under the branch's own service-charge policy, not as a bonus calculated from this clause.",
+            "notBonusKind": "service-charge",
+            "needsPersonWhy": null
+          },
+          {
+            "type": "not-a-bonus",
+            "bonus": null,
+            "quote": "After 3 month salary rises to 20 000 thb",
+            "plainWords": "This is a salary increase to THB 20,000 after 3 months, which HR handles as a pay change, not a monthly bonus.",
+            "notBonusKind": "salary-change",
+            "needsPersonWhy": null
+          }
+        ],
+        "summary": "The employee receives service charge under the branch's service-charge policy, and after 3 months their salary increases to THB 20,000. Neither item is a bonus payroll calculates from this clause.",
+        "questions": [
+          "From which date do the 3 months run, so HR knows when the salary rises to THB 20,000?"
+        ]
+      }
+    },
+    {
+      "n": 4,
+      "text": "Nanny and Drop-Off Service bonuses, shared among the Childcare Team based on days worked.",
+      "people": 1,
+      "sha256": "5a79cd01c29f8b7bb009b18377b1327bb5f0fe349d005430d41c99af0c3ea7b1",
+      "decision": "approved",
+      "source": "ai",
+      "reading": {
+        "parts": [
+          {
+            "type": "bonus",
+            "bonus": {
+              "cap": null,
+              "team": "Childcare Team",
+              "unit": null,
+              "basis": "percent-of-revenue",
+              "split": "days-worked",
+              "percent": null,
+              "revenue": null,
+              "sharing": "team",
+              "joinPool": "07fe5896-d3c6-4f9b-84a7-962e250a18cf",
+              "threshold": null,
+              "bahtPerUnit": null
+            },
+            "quote": "Nanny and Drop-Off Service bonuses, shared among the Childcare Team based on days worked.",
+            "plainWords": "The employee takes part in the Childcare Team's nanny and drop-off bonus pool. The pool is divided among the team according to days worked, and the pool's own approved terms set the amount.",
+            "notBonusKind": null,
+            "needsPersonWhy": null
+          }
+        ],
+        "summary": "The employee joins the existing Childcare Team bonus pool for nanny and drop-off service, which is shared among the team by days worked. The clause itself states no rate, so it is handled by joining the approved team pool (20% of nanny and drop-off sales, shared by Childcare Team by days worked).",
+        "questions": [
+          "Is this the same bonus as the approved pool '20% of nanny and drop-off sales, shared by Childcare Team by days worked'?",
+          "Who are the members of the Childcare Team for this pool?",
+          "Should the pool cover nanny and drop-off sales at both parks or only the employee's own park?"
+        ]
+      },
+      "assignees": [
+        "hkc-010"
+      ],
+      "rules": [
+        {
+          "joined": true,
+          "name": "Contract · 20% of nanny and drop-off sales, shared by Childcare Team by days worked"
+        }
+      ],
+      "amounts": {
+        "hkc-010": 27272.73
+      }
+    },
+    {
+      "n": 5,
+      "text": "0,2% of total revenue if revenue is over 4,5 mln thb",
+      "people": 1,
+      "sha256": "d01bbd8cedea385f380f348cab6eadf0460742e5b242d6aa1d5d3ac02bca7e30",
+      "decision": "approved",
+      "source": "ai",
+      "reading": {
+        "parts": [
+          {
+            "type": "bonus",
+            "bonus": {
+              "cap": null,
+              "team": null,
+              "unit": null,
+              "basis": "percent-of-revenue",
+              "split": null,
+              "percent": 0.2,
+              "revenue": {
+                "streams": [
+                  "zz-test-birthday",
+                  "zz-test-drop-off",
+                  "zz-test-nanny",
+                  "zz-test-special-events",
+                  "zz-test-tickets"
+                ],
+                "branches": "all",
+                "described": "total revenue"
+              },
+              "sharing": "own",
+              "joinPool": null,
+              "threshold": 4500000,
+              "bahtPerUnit": null
+            },
+            "quote": "0,2% of total revenue if revenue is over 4,5 mln thb",
+            "plainWords": "Pay 0.2% of total monthly sales (all sales streams, excluding the service charge pool) in any month where those sales exceed THB 4,500,000. If sales are 4,500,000 or less, nothing is paid for this part.",
+            "notBonusKind": null,
+            "needsPersonWhy": null
+          }
+        ],
+        "summary": "Pays the employee 0.2% of total monthly sales, but only in months where that total sales figure exceeds THB 4,500,000. Nothing is paid in months at or below that level.",
+        "questions": [
+          "Does \"total revenue\" mean the combined sales of both parks, or only the employee's own park?",
+          "Should \"total revenue\" include all sales streams (birthday, drop-off, nanny, special events, tickets) and exclude the service charge pool?",
+          "Is the same total used for the THB 4.5 million threshold as for the 0.2% calculation?",
+          "Is 0.2% correct for this employee, given other clauses with the same 4.5 million threshold use 0.4% and 0.002%?"
+        ]
+      },
+      "assignees": [
+        "hkc-002"
+      ],
+      "rules": [
+        {
+          "kind": "revenue",
+          "rate": 0.2,
+          "inputKey": "",
+          "target": 4500000,
+          "cap": null,
+          "streams": [
+            "birthday-park",
+            "drop-off",
+            "nanny",
+            "special-events",
+            "tickets"
+          ],
+          "branches": [
+            "hkt-central",
+            "hkt-chalong"
+          ],
+          "team": "",
+          "name": "Contract · 0.2% of total revenue, when above 4,500,000"
+        }
+      ],
+      "amounts": {
+        "hkc-002": 10000
+      }
+    },
+    {
+      "n": 6,
+      "text": "2% of all Birthday Revenue, 2,5% of all special event revenue. Company pays for housing, 28 000.",
+      "people": 1,
+      "sha256": "0d2a3eeea017f9121e5a7e12e869f4387266e3f3c7555e103cba249413af2288",
+      "decision": "approved",
+      "source": "ai",
+      "reading": {
+        "parts": [
+          {
+            "type": "bonus",
+            "bonus": {
+              "cap": null,
+              "team": null,
+              "unit": null,
+              "basis": "percent-of-revenue",
+              "split": null,
+              "percent": 2,
+              "revenue": {
+                "streams": [
+                  "zz-test-birthday"
+                ],
+                "branches": "all",
+                "described": "all Birthday Revenue"
+              },
+              "sharing": "own",
+              "joinPool": null,
+              "threshold": null,
+              "bahtPerUnit": null
+            },
+            "quote": "2% of all Birthday Revenue",
+            "plainWords": "Pays 2% of birthday revenue each month. Read as all parks' birthday revenue unless confirmed otherwise.",
+            "notBonusKind": null,
+            "needsPersonWhy": null
+          },
+          {
+            "type": "bonus",
+            "bonus": {
+              "cap": null,
+              "team": null,
+              "unit": null,
+              "basis": "percent-of-revenue",
+              "split": null,
+              "percent": 2.5,
+              "revenue": {
+                "streams": [
+                  "zz-test-special-events"
+                ],
+                "branches": "all",
+                "described": "all special event revenue"
+              },
+              "sharing": "own",
+              "joinPool": null,
+              "threshold": null,
+              "bahtPerUnit": null
+            },
+            "quote": "2,5% of all special event revenue",
+            "plainWords": "Pays 2,5% of special event revenue each month. Read as all parks' special event revenue unless confirmed otherwise.",
+            "notBonusKind": null,
+            "needsPersonWhy": null
+          },
+          {
+            "type": "not-a-bonus",
+            "bonus": null,
+            "quote": "Company pays for housing, 28 000.",
+            "plainWords": "Housing paid by the company, 28 000. This is a benefit, not an incentive payroll calculates from this clause.",
+            "notBonusKind": "benefit",
+            "needsPersonWhy": null
+          }
+        ],
+        "summary": "The employee earns 2% of all birthday party revenue plus 2,5% of all special event revenue each month. The company also pays 28 000 for housing, which is a benefit handled outside payroll incentives.",
+        "questions": [
+          "Does \"all Birthday Revenue\" mean both parks combined, or only the employee's own park?",
+          "Does \"all special event revenue\" mean both parks combined, or only the employee's own park?"
+        ]
+      },
+      "assignees": [
+        "hch-001"
+      ],
+      "rules": [
+        {
+          "kind": "revenue",
+          "rate": 2,
+          "inputKey": "",
+          "target": null,
+          "cap": null,
+          "streams": [
+            "birthday-park"
+          ],
+          "branches": [
+            "hkt-central",
+            "hkt-chalong"
+          ],
+          "team": "",
+          "name": "Contract · 2% of all Birthday Revenue"
+        },
+        {
+          "kind": "revenue",
+          "rate": 2.5,
+          "inputKey": "",
+          "target": null,
+          "cap": null,
+          "streams": [
+            "special-events"
+          ],
+          "branches": [
+            "hkt-central",
+            "hkt-chalong"
+          ],
+          "team": "",
+          "name": "Contract · 2.5% of all special event revenue"
+        }
+      ],
+      "amounts": {
+        "hch-001": 25500
+      }
+    },
+    {
+      "n": 7,
+      "text": "1% of all Birthday Revenue, 2% of all special event revnue",
+      "people": 1,
+      "sha256": "1df514c77dd8dff72275c55ca4bc3b00524af6c01be02475dee30fde687ffa0b",
+      "decision": "waiting",
+      "why": "Only person with this clause has left and has no payroll profile, so it cannot be approved.",
+      "source": "ai",
+      "reading": {
+        "parts": [
+          {
+            "type": "bonus",
+            "bonus": {
+              "cap": null,
+              "team": null,
+              "unit": null,
+              "basis": "percent-of-revenue",
+              "split": null,
+              "percent": 1,
+              "revenue": {
+                "streams": [
+                  "zz-test-birthday"
+                ],
+                "branches": "all",
+                "described": "all Birthday Revenue"
+              },
+              "sharing": "own",
+              "joinPool": null,
+              "threshold": null,
+              "bahtPerUnit": null
+            },
+            "quote": "1% of all Birthday Revenue",
+            "plainWords": "Pays 1% of birthday party sales (excluding VAT and service charge) each month. Earned by this employee alone, with no minimum and no cap.",
+            "notBonusKind": null,
+            "needsPersonWhy": null
+          },
+          {
+            "type": "bonus",
+            "bonus": {
+              "cap": null,
+              "team": null,
+              "unit": null,
+              "basis": "percent-of-revenue",
+              "split": null,
+              "percent": 2,
+              "revenue": {
+                "streams": [
+                  "zz-test-special-events"
+                ],
+                "branches": "all",
+                "described": "all special event revnue"
+              },
+              "sharing": "own",
+              "joinPool": null,
+              "threshold": null,
+              "bahtPerUnit": null
+            },
+            "quote": "2% of all special event revnue",
+            "plainWords": "Pays 2% of special event sales (excluding VAT and service charge) each month. Earned by this employee alone, with no minimum and no cap.",
+            "notBonusKind": null,
+            "needsPersonWhy": null
+          }
+        ],
+        "summary": "The employee earns 1% of birthday revenue plus 2% of special event revenue each month, with no threshold or cap, earned alone.",
+        "questions": [
+          "Does \"all Birthday Revenue\" mean both parks combined, or only the employee's own park?",
+          "Does \"all special event revnue\" mean both parks combined, or only the employee's own park?"
+        ]
+      }
+    },
+    {
+      "n": 8,
+      "text": "+ Service Charge",
+      "people": 1,
+      "sha256": "5b6716bf37bcd06b5c31c5fab22fcece395c6b6780085bb926351869e98a7be5",
+      "decision": "not-incentive",
+      "why": "Decided on staging: not an incentive (service charge and a salary change are not bonuses).",
+      "source": "ai",
+      "reading": {
+        "parts": [
+          {
+            "type": "not-a-bonus",
+            "bonus": null,
+            "quote": "+ Service Charge",
+            "plainWords": "The employee gets a share of service charge. This is paid through the branch's standard service-charge policy, not as a bonus calculated from this clause.",
+            "notBonusKind": "service-charge",
+            "needsPersonWhy": null
+          }
+        ],
+        "summary": "The clause only states that the employee receives service charge. Service charge is paid under the branch's own service-charge policy, so payroll calculates no incentive from this clause.",
+        "questions": []
+      }
+    },
+    {
+      "n": 9,
+      "text": "20% of Nanny and Drop Off revenue to be devided as a bonus between all working nanny's and activity hosts",
+      "people": 1,
+      "sha256": "86c3980bf1e94923ff376548be5f80eb507f879b49babfa1614c99678662e476",
+      "decision": "waiting",
+      "why": "Only person with this clause has left and has no payroll profile, so it cannot be approved; the pool is also split equally, which payroll cannot do for a sales pool.",
+      "source": "ai",
+      "reading": {
+        "parts": [
+          {
+            "type": "bonus",
+            "bonus": {
+              "cap": null,
+              "team": "all working nanny's and activity hosts",
+              "unit": null,
+              "basis": "percent-of-revenue",
+              "split": "equal",
+              "percent": 20,
+              "revenue": {
+                "streams": [
+                  "zz-test-nanny",
+                  "zz-test-drop-off"
+                ],
+                "branches": "all",
+                "described": "Nanny and Drop Off revenue"
+              },
+              "sharing": "team",
+              "joinPool": null,
+              "threshold": null,
+              "bahtPerUnit": null
+            },
+            "quote": "20% of Nanny and Drop Off revenue to be devided as a bonus between all working nanny's and activity hosts",
+            "plainWords": "Each month payroll takes 20% of nanny revenue plus drop-off revenue and divides that pool between all working nannies and activity hosts. There is no minimum and no maximum.",
+            "notBonusKind": null,
+            "needsPersonWhy": null
+          }
+        ],
+        "summary": "Pays a bonus pool of 20% of nanny and drop-off revenue, shared between all working nannies and activity hosts.",
+        "questions": [
+          "Should the nanny and drop-off revenue be taken from both parks combined, or only from the employee's own park?",
+          "Who exactly counts as \"all working nanny's and activity hosts\" for this pool each month?",
+          "Is the pool split equally, or should it be shared by days worked as in the other childcare clause?",
+          "Is 20% of nanny and drop-off revenue correct, as it is far higher than the other revenue-share rates in use?"
+        ]
+      }
+    },
+    {
+      "n": 10,
+      "text": "+ Service Charge + Nanny and drop off service bonus",
+      "people": 1,
+      "sha256": "44cf3f906bddef87dbe13b25bde644e919e619d9a3f3a1aefa1f11d609120a30",
+      "decision": "approved",
+      "source": "person",
+      "reading": {
+        "parts": [
+          {
+            "type": "not-a-bonus",
+            "bonus": null,
+            "quote": "+ Service Charge",
+            "plainWords": "Service charge is paid out under the branch's own service-charge policy, not calculated by payroll from this clause.",
+            "notBonusKind": "service-charge",
+            "needsPersonWhy": null
+          },
+          {
+            "type": "bonus",
+            "bonus": {
+              "cap": null,
+              "team": "Childcare Team",
+              "unit": null,
+              "basis": "percent-of-revenue",
+              "split": "days-worked",
+              "percent": 20,
+              "revenue": {
+                "streams": [
+                  "zz-test-nanny",
+                  "zz-test-drop-off"
+                ],
+                "branches": "all",
+                "described": "nanny and drop-off sales"
+              },
+              "sharing": "team",
+              "joinPool": null,
+              "threshold": null,
+              "bahtPerUnit": null
+            },
+            "quote": "+ Nanny and drop off service bonus",
+            "plainWords": "20% of nanny and drop-off sales, one pool shared by the Childcare Team by days worked.",
+            "notBonusKind": null,
+            "needsPersonWhy": null
+          }
+        ],
+        "summary": "Service charge is paid by the service-charge policy. The nanny and drop-off bonus is the Childcare Team pool: 20% of nanny and drop-off sales, shared by days worked (the rate of the park's own nanny clause).",
+        "questions": [
+          "What rate or amount is the nanny and drop-off service bonus (for example a percent of nanny and drop-off revenue)?",
+          "Is this bonus earned by the employee alone, or is it one pool shared with a team, and if shared, which team and how is it split?",
+          "Which sales count for this bonus: nanny revenue, drop-off revenue, or both, and at which park(s)?"
+        ]
+      },
+      "assignees": [
+        "hkc-009"
+      ],
+      "rules": [
+        {
+          "kind": "team-days",
+          "rate": 20,
+          "inputKey": "",
+          "target": null,
+          "cap": null,
+          "streams": [
+            "drop-off",
+            "nanny"
+          ],
+          "branches": [
+            "hkt-central",
+            "hkt-chalong"
+          ],
+          "team": "childcare team",
+          "name": "Contract · 20% of nanny and drop-off sales, shared by Childcare Team by days worked"
+        }
+      ],
+      "amounts": {
+        "hkc-009": 32727.27
+      }
+    },
+    {
+      "n": 11,
+      "text": "30 baht per returned flyer, devided by the Sale Booth team",
+      "people": 1,
+      "sha256": "d286e069efc80ef5073994fcc8b83dbbaec024b6346b80b151c16cebbdd3fdea",
+      "decision": "waiting",
+      "why": "Only person with this clause has left and has no payroll profile, so it cannot be approved.",
+      "source": "ai",
+      "reading": {
+        "parts": [
+          {
+            "type": "bonus",
+            "bonus": {
+              "cap": null,
+              "team": "Sale Booth team",
+              "unit": {
+                "counted": "team-total",
+                "inputKey": "returned-flyers",
+                "described": "returned flyer"
+              },
+              "basis": "baht-per-unit",
+              "split": "equal",
+              "percent": null,
+              "revenue": null,
+              "sharing": "team",
+              "joinPool": null,
+              "threshold": null,
+              "bahtPerUnit": 30
+            },
+            "quote": "30 baht per returned flyer, devided by the Sale Booth team",
+            "plainWords": "Pay 30 baht for every returned flyer counted in the month. The total is one pool divided among the Sale Booth team.",
+            "notBonusKind": null,
+            "needsPersonWhy": null
+          }
+        ],
+        "summary": "Pays 30 baht for each returned flyer, with the resulting amount shared out among the Sale Booth team.",
+        "questions": [
+          "Is the returned-flyer count one number for the whole Sale Booth team, or counted separately for this employee?",
+          "Who is in the Sale Booth team, and should the pool be split equally or by days worked?",
+          "Other clauses pay 10 and 15 baht per returned flyer to the same Sale Booth team — is 30 baht correct for this employee?"
+        ]
+      }
+    },
+    {
+      "n": 12,
+      "text": "Monthly bonus of THB 400 per hosted birthday party, calculated based on the total number of birthday parties hosted during the month.",
+      "people": 1,
+      "sha256": "3c6b75799a1dd26cdbb61f9b66179d657514494ddea98e5c0287ba1efd898eaf",
+      "decision": "approved",
+      "source": "ai",
+      "reading": {
+        "parts": [
+          {
+            "type": "bonus",
+            "bonus": {
+              "cap": null,
+              "team": null,
+              "unit": {
+                "counted": "team-total",
+                "inputKey": "birthday-parties",
+                "described": "hosted birthday party"
+              },
+              "basis": "baht-per-unit",
+              "split": null,
+              "percent": null,
+              "revenue": null,
+              "sharing": "own",
+              "joinPool": null,
+              "threshold": null,
+              "bahtPerUnit": 400
+            },
+            "quote": "Monthly bonus of THB 400 per hosted birthday party, calculated based on the total number of birthday parties hosted during the month.",
+            "plainWords": "Pay 400 baht for every birthday party hosted during the month. The number of parties hosted is typed in each month.",
+            "notBonusKind": null,
+            "needsPersonWhy": null
+          }
+        ],
+        "summary": "Pays THB 400 for each birthday party hosted, counted from the total number of birthday parties hosted in the month. No threshold or cap is stated.",
+        "questions": [
+          "Is the monthly count the park's total birthday parties, or only the parties this employee personally hosted?",
+          "If it is a park total, which park's parties are counted (the employee's own park or both parks)?",
+          "Does this employee keep the full 400 baht per party, or is it shared with a team?"
+        ]
+      },
+      "assignees": [
+        "hkc-016"
+      ],
+      "rules": [
+        {
+          "kind": "unit-pool",
+          "rate": 400,
+          "inputKey": "birthday-parties",
+          "target": null,
+          "cap": null,
+          "streams": [],
+          "branches": [],
+          "team": "",
+          "name": "Contract · 400 baht per hosted birthday party"
+        }
+      ],
+      "amounts": {
+        "hkc-016": 4800
+      }
+    },
+    {
+      "n": 13,
+      "text": "Monthly bonus of 0,4% of total revenue, provided that the combined monthly revenue of both parks exceeds THB 4.5 million",
+      "people": 1,
+      "sha256": "2f7cafe0bdb015cc17ad31961475bbcff9628985803b04fea4733817790c7261",
+      "decision": "approved",
+      "source": "ai",
+      "reading": {
+        "parts": [
+          {
+            "type": "bonus",
+            "bonus": {
+              "cap": null,
+              "team": null,
+              "unit": null,
+              "basis": "percent-of-revenue",
+              "split": null,
+              "percent": 0.4,
+              "revenue": {
+                "streams": [
+                  "zz-test-birthday",
+                  "zz-test-drop-off",
+                  "zz-test-nanny",
+                  "zz-test-special-events",
+                  "zz-test-tickets"
+                ],
+                "branches": "all",
+                "described": "total revenue, combined over both parks"
+              },
+              "sharing": "own",
+              "joinPool": null,
+              "threshold": 4500000,
+              "bahtPerUnit": null
+            },
+            "quote": "Monthly bonus of 0,4% of total revenue, provided that the combined monthly revenue of both parks exceeds THB 4.5 million",
+            "plainWords": "Pay 0.4% of the combined total revenue of both parks. Pay nothing in a month where that combined revenue is 4,500,000 baht or less.",
+            "notBonusKind": null,
+            "needsPersonWhy": null
+          }
+        ],
+        "summary": "Pays the employee 0.4% of total revenue of both parks each month, but only in a month when the two parks' combined revenue is more than THB 4,500,000.",
+        "questions": [
+          "Does \"total revenue\" mean all sales streams (birthday, drop-off, nanny, special events, tickets and other sales) with the service charge pool excluded?",
+          "Should the 4.5 million threshold be tested on the same combined total revenue that the 0.4% is paid on?",
+          "Other clauses use 0,2% and 0,002% of total revenue with the same 4.5 million condition — is 0,4% correct for this employee?"
+        ]
+      },
+      "assignees": [
+        "hkc-001"
+      ],
+      "rules": [
+        {
+          "kind": "revenue",
+          "rate": 0.4,
+          "inputKey": "",
+          "target": 4500000,
+          "cap": null,
+          "streams": [
+            "birthday-park",
+            "drop-off",
+            "nanny",
+            "special-events",
+            "tickets"
+          ],
+          "branches": [
+            "hkt-central",
+            "hkt-chalong"
+          ],
+          "team": "",
+          "name": "Contract · 0.4% of total revenue, combined over both parks, when above 4,500,000"
+        }
+      ],
+      "amounts": {
+        "hkc-001": 20000
+      }
+    },
+    {
+      "n": 14,
+      "text": "Monthly bonus of 0,002% of total revenue, provided that the combined monthly revenue of both parks exceeds THB 4.5 million",
+      "people": 1,
+      "sha256": "71bcf6e6b7b4fd10021eef72f1768fdf5f57f2c026780d888a04b9b784e6d9c3",
+      "decision": "waiting",
+      "why": "Held for the owner: 0,002% pays 90 baht at the 4.5 million threshold; the rate is to be confirmed.",
+      "source": "ai",
+      "reading": {
+        "parts": [
+          {
+            "type": "bonus",
+            "bonus": {
+              "cap": null,
+              "team": null,
+              "unit": null,
+              "basis": "percent-of-revenue",
+              "split": null,
+              "percent": 0.002,
+              "revenue": {
+                "streams": [
+                  "zz-test-birthday",
+                  "zz-test-drop-off",
+                  "zz-test-nanny",
+                  "zz-test-special-events",
+                  "zz-test-tickets"
+                ],
+                "branches": "all",
+                "described": "total revenue of both parks combined"
+              },
+              "sharing": "own",
+              "joinPool": null,
+              "threshold": 4500000,
+              "bahtPerUnit": null
+            },
+            "quote": "Monthly bonus of 0,002% of total revenue, provided that the combined monthly revenue of both parks exceeds THB 4.5 million",
+            "plainWords": "Pays 0.002% of the two parks' combined sales for the month. Nothing is paid unless those combined sales are above THB 4,500,000.",
+            "notBonusKind": null,
+            "needsPersonWhy": null
+          }
+        ],
+        "summary": "A monthly bonus of 0.002% of the combined total sales of both parks, paid only in months when that combined total exceeds THB 4,500,000. The employee earns it alone.",
+        "questions": [
+          "Is the rate really 0,002% (other clauses for the same kind of bonus use 0,4% and 0,2%)?",
+          "Does \"total revenue\" mean all sales streams (birthday, drop-off, nanny, special events, tickets) and exclude the service charge pool?",
+          "At exactly 4,500,000 baht, 0.002% pays 90 baht a month. Please confirm the rate really is 0.002%."
+        ]
+      }
+    }
+  ]
+}

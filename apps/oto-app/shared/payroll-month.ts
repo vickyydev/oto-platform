@@ -15,6 +15,7 @@ import type {
 } from "../server/payroll/engine/company-model";
 import type { AttendanceDay } from "../server/payroll/engine/model";
 import type { RevenueStream } from "./payroll-config";
+import type { ClauseMonthMark } from "./payroll-clause-reading";
 
 /** The prototype's discount add-backs (company-model DISCOUNTS). */
 export const PAYROLL_DISCOUNTS = ["owner-complimentary", "free-coffee", "staff-discount", "free-ice-cream"] as const;
@@ -124,6 +125,8 @@ export interface PreviewView {
   stale: boolean;
   /** The prototype's "problems still open" count of the check & fix step. */
   openProblems: number;
+  /** SCRUM-1075: per person with a contract clause, its state and the rules its approved reading pays from. */
+  clauseMarks?: ClauseMonthMark[];
 }
 
 /** What a lock froze of the outputs: the prototype's CompanyOutputs without file bodies (those are payroll_output_files rows). */

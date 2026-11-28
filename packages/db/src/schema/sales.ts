@@ -345,6 +345,16 @@ export const sale = pos.table(
      * not a number (a sale rung up before the number was asked, a booking).
      */
     customerPhone: text('customer_phone'),
+    /**
+     * SCRUM-1077 — THE LANGUAGE THE GUEST CHOSE AT THE TILL, one of the
+     * customer display's five (`GUEST_LANGUAGES` in `@oto/shared`).
+     *
+     * Sent to the gate box with each of the sale's bands, so the gate shows
+     * that guest's messages in their language. Null when nobody chose in this
+     * sale (and on every sale before this column): the gate then shows the
+     * park's own list of languages, as before. Wording only.
+     */
+    guestLanguage: text('guest_language'),
     visitId: uuid('visit_id').references(() => visit.id, { onDelete: 'restrict' }),
     bookingId: uuid('booking_id').references(() => booking.id, { onDelete: 'restrict' }),
 
@@ -505,6 +515,11 @@ export const sale = pos.table(
     check(
       'sale_customer_phone_check',
       sql`${t.customerPhone} is null or ${t.customerPhone} ~ '^\\+[1-9][0-9]{6,14}$'`,
+    ),
+    /** SCRUM-1077 — the guest's language is one of the customer display's five, or nothing. */
+    check(
+      'sale_guest_language_check',
+      sql`${t.guestLanguage} is null or ${t.guestLanguage} in ('en','zh','th','ru','fr')`,
     ),
     /**
      * S2-20 K1 — somebody rang it up: a person, or a paired device. The rule

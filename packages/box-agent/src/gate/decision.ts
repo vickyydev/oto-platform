@@ -27,6 +27,9 @@
  *     box did not think was inside is let out and recorded as exit without
  *     entry, and the count never goes below zero. A revoked band is let out
  *     too — the refunded guest walking out is exactly who holds one;
+ *   - except (owner's list of 24 November, SCRUM-68): a band whose end time is
+ *     KNOWN and has passed is refused in either direction and sent to the
+ *     cashier (`playTimeEnded`); an end not known refuses nothing;
  *   - a band this box has never heard of, with no platform to ask, is refused
  *     "please see reception" (OD-A5). Online, the host refreshes its band copy
  *     first and asks again, and a band still unknown is `BAND_NOT_FOUND`.
@@ -40,6 +43,7 @@ import {
   type GateDenyReason,
   type GateEventKind,
   type GateEventPayload,
+  type GuestLanguage,
 } from '@oto/shared';
 
 import type { QueuedFact } from '../store';
@@ -49,15 +53,34 @@ import type { GateSide } from './ge-x2';
 export type BandKind = 'kid' | 'adult';
 
 /**
+ * SCRUM-68 — what the platform says of a band's ticket, from the `bands`
+ * copy (`BandGateDetails` in `@oto/shared`). Every field may be absent: an
+ * older platform sends none, and a line with no stay hours has no end.
+ */
+export interface BandDetails {
+  ticketLabel?: string;
+  stayLabel?: string;
+  /** When the band's play ends, epoch ms — the band print's "valid until". */
+  validUntil?: number;
+  /**
+   * SCRUM-1077 — the language the guest chose at the till for the band's
+   * sale. Wording only: `decideGate` never reads it; the reader's screen does
+   * (`composeGuestGateScreen` in `@oto/shared`, through `host.ts`).
+   */
+  guestLanguage?: GuestLanguage;
+}
+
+/**
  * What the box knows of one band.
  *
  * `gateAccess` is the band's own flag, taken from its ticket package when it
  * was minted (SCRUM-494). Absent when the copy came from a platform that does
- * not send it; the kind rule alone then decides.
+ * not send it; the kind rule alone then decides. `details` is present only
+ * when the copy carried any (SCRUM-68).
  */
 export type BandLookup =
   /** In the `bands` copy: active. */
-  | { state: 'active'; kind: BandKind; gateAccess?: boolean }
+  | { state: 'active'; kind: BandKind; gateAccess?: boolean; details?: BandDetails }
   /** On the deny list, or in the copy with a status other than active. */
   | { state: 'revoked'; kind: BandKind | null; gateAccess?: boolean }
   /** In neither. */
@@ -78,6 +101,48 @@ export interface GateDecisionInput {
    * the band is still not in it.
    */
   unknownMeans: 'offline' | 'not_found';
+  /**
+   * The box's corrected clock, for the play-time rule (SCRUM-68). Absent, no
+   * band is refused on time.
+   */
+  now?: number;
+}
+
+/**
+ * Why the box refused, as the box words it: the journal's reasons, plus
+ * `OVER_TIME`, which the journal's closed reason list does not hold and which
+ * is therefore journalled as its nearest reason (`journalReason`).
+ */
+export type GateRefusal = GateDenyReason | 'OVER_TIME';
+
+/**
+ * SCRUM-68 — minutes past a band's "valid until" before the gate refuses it
+ * on time. 0: the end printed on the band is the end at the gate.
+ */
+export const GATE_OVERTIME_GRACE_MINUTES = 0;
+
+/**
+ * THE PLAY-TIME RULE (owner's list of 24 November, SCRUM-68): a band whose
+ * end time is KNOWN and has passed is refused at the entry AND at the exit,
+ * and sent to the cashier. For this one case it replaces "an adult exit is
+ * always allowed" (OD-A4). An end that is not known (an older platform, a
+ * line with no stay hours, a box that never received it, a revoked band)
+ * refuses nothing: missing data never traps anybody.
+ */
+export function playTimeEnded(validUntil: number | undefined, now: number | undefined): boolean {
+  if (validUntil === undefined || now === undefined) return false;
+  if (!Number.isFinite(validUntil) || !Number.isFinite(now)) return false;
+  return now > validUntil + GATE_OVERTIME_GRACE_MINUTES * 60_000;
+}
+
+/**
+ * The reason a refusal is journalled under. The event schema's reason list is
+ * closed and the platform validates it, so `OVER_TIME` travels as its nearest
+ * existing reason, `NO_GATE_ACCESS` (the band's right to operate the gate has
+ * run out), until the platform knows it. The box log names it plainly.
+ */
+export function journalReason(reason: GateRefusal): GateDenyReason {
+  return reason === 'OVER_TIME' ? 'NO_GATE_ACCESS' : reason;
 }
 
 export type GateDecision =
@@ -93,7 +158,7 @@ export type GateDecision =
     }
   | {
       open: false;
-      reason: GateDenyReason;
+      reason: GateRefusal;
       /** The band the code named, when it named one this park signed. */
       bandId: string | null;
       message: string;
@@ -106,21 +171,25 @@ export type GateDecision =
  */
 export const GATE_MESSAGES = {
   welcome: 'Welcome / ยินดีต้อนรับ',
-  goodbye: 'Goodbye / ขอบคุณที่มาเที่ยว',
+  // The exit's own text, as the owner approved it on the gate's screen (26 November 2026).
+  goodbye: 'Thank you / ขอบคุณ / See you again / แล้วพบกันใหม่',
   NOT_A_BAND: 'Scan your wristband / สแกนสายรัดข้อมือ',
   BOX_NOT_READY: 'Please see reception / กรุณาติดต่อเคาน์เตอร์',
   BAND_INVALID: 'Band not valid / สายรัดข้อมือไม่ถูกต้อง',
   BAND_REVOKED: 'Band not valid, see reception / สายรัดข้อมือใช้ไม่ได้ กรุณาติดต่อเคาน์เตอร์',
   BAND_NOT_FOUND: 'Band not valid, see reception / สายรัดข้อมือใช้ไม่ได้ กรุณาติดต่อเคาน์เตอร์',
   BAND_UNKNOWN_OFFLINE: 'Please see reception / กรุณาติดต่อเคาน์เตอร์',
-  KID_BAND: 'Adult band please / กรุณาใช้สายรัดผู้ใหญ่',
+  // TRANSLATE: "Kids enter with their adult" is new English; the Thai is the earlier line.
+  KID_BAND: 'Adult band please. Kids enter with their adult / กรุณาใช้สายรัดผู้ใหญ่',
+  // TRANSLATE: new English, no Thai yet (SCRUM-68, owner's list of 24 November).
+  OVER_TIME: 'Your play time has ended. Please see the cashier.',
   NO_GATE_ACCESS: 'Band not valid, see reception / สายรัดข้อมือใช้ไม่ได้ กรุณาติดต่อเคาน์เตอร์',
   ANTI_PASSBACK: 'Already entered / สายรัดนี้เข้าแล้ว',
   GATE_BUSY: 'Please wait / กรุณารอสักครู่',
   GATE_NOT_READY: 'Gate not ready, see reception / ประตูยังไม่พร้อม กรุณาติดต่อเคาน์เตอร์',
-} as const satisfies Record<GateDenyReason | 'welcome' | 'goodbye', string>;
+} as const satisfies Record<GateRefusal | 'welcome' | 'goodbye', string>;
 
-function deny(reason: GateDenyReason, bandId: string | null = null): GateDecision {
+function deny(reason: GateRefusal, bandId: string | null = null): GateDecision {
   return { open: false, reason, bandId, message: GATE_MESSAGES[reason] };
 }
 
@@ -153,10 +222,14 @@ export function decideGate(input: GateDecisionInput): GateDecision {
   if (known.kind === 'kid') return deny('KID_BAND', bandId);
   // The ticket's Gate access is off: the band follows its group (SCRUM-494).
   if (known.gateAccess === false) return deny('NO_GATE_ACCESS', bandId);
+  // SCRUM-68: only an active band's own end time is read; a revoked one has none.
+  const timeEnded =
+    known.state === 'active' && playTimeEnded(known.details?.validUntil, input.now);
 
   if (input.direction === 'entry') {
     if (known.state === 'revoked') return deny('BAND_REVOKED', bandId);
     if (input.inside(bandId)) return deny('ANTI_PASSBACK', bandId);
+    if (timeEnded) return deny('OVER_TIME', bandId);
     return {
       open: true,
       bandId,
@@ -167,7 +240,9 @@ export function decideGate(input: GateDecisionInput): GateDecision {
     };
   }
 
-  // Exit: always (OD-A4).
+  // Exit: always (OD-A4) — except a band whose known play time has ended,
+  // which is sent to the cashier (owner's list of 24 November, SCRUM-68).
+  if (timeEnded) return deny('OVER_TIME', bandId);
   return {
     open: true,
     bandId,

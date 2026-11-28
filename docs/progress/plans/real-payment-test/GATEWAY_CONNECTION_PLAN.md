@@ -1,5 +1,9 @@
 # Connecting the real payment gateway: the plan
 
+## 25 November 2026 payment checkpoint
+
+SCB02 paid the staging BEO deposit once through a real THB 1 PromptPay transaction. The separate counter QR was cancelled unpaid. SCB01 reached hosted checkout. The park Pi detected both Digio USB interfaces. The operator reports that LinkPOS needs a dedicated credential. Resume with a Terminal Info reply before a supervised sale, then compare the bank approval and POS receipt. Physical card payment, settlement/refund, the second terminal and Radar still need evidence. See [SCRUM-709 and the acceptance record](../../PARK_CHECKPOINT_2026-11-25.md).
+
 ## 23 November 2026, Digio USB bench
 
 The Windows laptop or Raspberry Pi can run the counter box agent. The agent polls staging and writes the card amount to the assigned PAX over serial. The till and agent must use the same registered box. Start with the included `oto-box digio-info` command to list ports. On Windows use `oto-box digio-info --port COM7` with the actual PAX port. On the Pi use the terminal's `/dev/serial/by-id/` path. This sends Digio terminal info (T0) and checks the matching T1 response without creating a sale. Save the verified path as the terminal address in Console. The customer still presents a card and follows the bank's prompts.

@@ -130,6 +130,13 @@ export const PERMISSIONS = [
    * raw string and grants nothing.
    */
   'admin:booth:staff_assign',
+  /**
+   * SCRUM-1078 — what the gate readers say, per park and language: read the
+   * wording and change it. Wording only: nothing behind these decides whether
+   * a gate opens. In no staff bundle; administrators hold both through `ALL`.
+   */
+  'admin:gate_message:read',
+  'admin:gate_message:manage',
   // Admin console — running the platform (S2-03)
   'admin:health:read',
   /** Retry a failed run, acknowledge an alert, resolve an expectation. */

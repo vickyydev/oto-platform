@@ -75,10 +75,13 @@ export function revenueBase(doc: CompanyPayrollDocument, month: string, base: Re
   let sum = 0;
   for (const branch of base.branches) {
     const input = doc.months[month]?.revenue[branch];
-    if (!input) { exceptions.push({ id: `${dependency}-${branch}-${month}`, branchId: branch, kind: "missing-input", severity: "blocking", message: `${dependency} depends on ${branch} revenue for ${month}.` }); continue; }
+    // SCRUM-1073 (owner ruling, 26 November 2026): a branch with no sales entered counts as 0 and does not
+    // block the month (a head office sells nothing). It stays on the list as a warning, so a selling
+    // branch whose sales were forgotten is still seen before the month is confirmed.
+    if (!input) { exceptions.push({ id: `${dependency}-${branch}-${month}`, branchId: branch, kind: "missing-input", severity: "warning", message: `${dependency}: no sales are entered for ${branch} for ${month}, so they count as 0.` }); continue; }
     for (const key of base.streams) {
       const cell = input.streams[key];
-      if (!cell) { exceptions.push({ id: `${dependency}-${branch}-${key}-${month}`, branchId: branch, kind: "missing-input", severity: "blocking", message: `${dependency} depends on ${month} ${branch} / ${key}.` }); continue; }
+      if (!cell) { exceptions.push({ id: `${dependency}-${branch}-${key}-${month}`, branchId: branch, kind: "missing-input", severity: "warning", message: `${dependency}: no ${key} sales are entered for ${branch} for ${month}, so they count as 0.` }); continue; }
       if (![cell.amount, cell.vat, cell.serviceCharge].every(n => Number.isFinite(n) && n >= 0) || cell.vat + cell.serviceCharge > cell.amount) throw new Error(`Invalid gross/VAT/service-charge input for ${branch}/${key}.`);
       sum += cell.amount - cell.vat - cell.serviceCharge;
     }

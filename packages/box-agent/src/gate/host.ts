@@ -16,6 +16,10 @@
  *   answer "1" — and later, the board's feedback on that side credits the
  *   passage, which commits anti-passback and journals entry / exit.
  *
+ * A READER-ONLY lane (SCRUM-68: a reader, no controller board) has no board
+ * to report a passage: the reader opens on our "1", and the passage is
+ * credited at the granted scan instead (`creditAtScan`).
+ *
  * Every refusal the box reaches about a band is journalled as a `denied`
  * band event; outcomes that name no band (a voucher at the reader, a beam
  * broken at rest, the gate held open) cannot be band events and are counted
@@ -44,10 +48,15 @@ import {
   commitPassage,
   decideGate,
   gateEventFact,
+  journalReason,
+  type BandDetails,
   type BandKind,
   type BandLookup,
   type GateDecision,
+  type GateRefusal,
 } from './decision';
+import { gateScreenMessage, type GateScreenFacts } from './screen';
+import { findSnapshotWallet, readWalletSnapshot } from '../wallet-lane';
 import {
   WATCHED_SETTINGS,
   WATCHED_SETTING_KEYS,
@@ -65,7 +74,16 @@ import {
   type ReaderServer,
 } from './reader-host';
 import type { BoxConfigStation } from '../protocol';
-import type { GateDenyReason } from '@oto/shared';
+import {
+  composeGateScreen,
+  composeGuestGateScreen,
+  readGateMessagesWire,
+  readGuestLanguage,
+  type GateDenyReason,
+  type GateMessageCase,
+  type GateMessageTexts,
+  type GuestLanguage,
+} from '@oto/shared';
 
 // --- The box's copy of the bands ------------------------------------------------
 
@@ -88,15 +106,20 @@ export function bandCopyFrom(
 ): BandCopy {
   const flag = (value: unknown): { gateAccess?: boolean } =>
     typeof value === 'boolean' ? { gateAccess: value } : {};
-  const active = new Map<string, { kind: BandKind; status: string; gateAccess?: boolean }>();
+  const active = new Map<
+    string,
+    { kind: BandKind; status: string; gateAccess?: boolean; details?: BandDetails }
+  >();
   for (const row of bandItems) {
     const r = row as { id?: unknown; kind?: unknown; status?: unknown; gateAccess?: unknown };
     if (typeof r.id !== 'string') continue;
     if (r.kind !== 'kid' && r.kind !== 'adult') continue;
+    const details = bandDetailsOf(row);
     active.set(r.id.toLowerCase(), {
       kind: r.kind,
       status: typeof r.status === 'string' ? r.status : 'active',
       ...flag(r.gateAccess),
+      ...(details ? { details } : {}),
     });
   }
   const revoked = new Map<string, { kind: BandKind | null; gateAccess?: boolean }>();
@@ -128,9 +151,38 @@ export function bandCopyFrom(
       if (!row) return { state: 'unknown' };
       const gate = row.gateAccess === undefined ? {} : { gateAccess: row.gateAccess };
       if (row.status !== 'active') return { state: 'revoked', kind: row.kind, ...gate };
-      return { state: 'active', kind: row.kind, ...gate };
+      return {
+        state: 'active',
+        kind: row.kind,
+        ...gate,
+        ...(row.details ? { details: row.details } : {}),
+      };
     },
   };
+}
+
+/**
+ * SCRUM-68 — the ticket, stay and end a `bands` row carries
+ * (`BandGateDetails` in `@oto/shared`), read defensively: a field that is not
+ * a usable value is left out. Undefined when the row carries none, as every
+ * row from an older platform does. SCRUM-1077 — and the language its guest
+ * chose at the till, only when it is one of the five.
+ */
+function bandDetailsOf(row: unknown): BandDetails | undefined {
+  const r = row as { ticketLabel?: unknown; stayLabel?: unknown; validUntil?: unknown; guestLanguage?: unknown };
+  const text = (v: unknown): string | undefined =>
+    typeof v === 'string' && v.trim() ? v.trim() : undefined;
+  const ticketLabel = text(r.ticketLabel);
+  const stayLabel = text(r.stayLabel);
+  const at = typeof r.validUntil === 'string' ? Date.parse(r.validUntil) : Number.NaN;
+  const guestLanguage = readGuestLanguage(r.guestLanguage);
+  const details: BandDetails = {
+    ...(ticketLabel ? { ticketLabel } : {}),
+    ...(stayLabel ? { stayLabel } : {}),
+    ...(Number.isFinite(at) ? { validUntil: at } : {}),
+    ...(guestLanguage ? { guestLanguage } : {}),
+  };
+  return Object.keys(details).length ? details : undefined;
 }
 
 // --- Passage state ------------------------------------------------------------------
@@ -199,7 +251,28 @@ export interface GateHostDeps {
   refreshBudgetMs?: number;
   readerOfflineAfterMs?: number;
   replyTimeoutMs?: number;
+  /** SCRUM-68 — the branch's zone, for the clock time on the screen. */
+  timezone?: string | null;
+  /** SCRUM-68 — the cached `wallets` scope's payload, for the credit on the screen. */
+  readWallets?: () => Promise<unknown>;
+  /** SCRUM-68 — how often the band copy is pulled while online. */
+  bandsRefreshMs?: number;
+  /**
+   * SCRUM-1078 — the park's own wording for the reader, as its config bundle
+   * carries it (`gateMessages`), read at every answer so a config pull is
+   * used at the next scan. Absent or unreadable, the reader shows the
+   * built-in wording exactly as before.
+   */
+  messages?: () => unknown;
 }
+
+/**
+ * SCRUM-68 — how often a gate pulls its band copy while online, so a band's
+ * ticket and end time (an Add time on the till included) reach the screen
+ * without waiting for an unknown band. A band refused on time is asked about
+ * at once instead (`decide`).
+ */
+export const GATE_BANDS_REFRESH_MS = 120_000;
 
 export interface GateDeviceHealth {
   reachability: 'unknown' | 'reachable' | 'unreachable';
@@ -272,6 +345,12 @@ export function createGateHost(deps: GateHostDeps): GateHost {
   let server: ReaderServer | null = null;
   let polling = false;
   let stateChain: Promise<unknown> = Promise.resolve();
+  /**
+   * Real time this host last pulled the band copy. Starts at the host's
+   * creation: the agent has just written a copy with its config.
+   */
+  let bandsRefreshedAt = realNow();
+  let bandsRefreshing = false;
 
   function count(code: string): void {
     counters.set(code, (counters.get(code) ?? 0) + 1);
@@ -382,7 +461,7 @@ export function createGateHost(deps: GateHostDeps): GateHost {
         side: sideFor(direction, lane.config.entrySide),
         stationId: lane.config.stationId,
         occurredAt: stamp(),
-        reason: decision.reason,
+        reason: journalReason(decision.reason),
         offline,
       }),
     );
@@ -395,27 +474,15 @@ export function createGateHost(deps: GateHostDeps): GateHost {
     return { open: false, reason, bandId, message: GATE_MESSAGES[reason] };
   }
 
-  async function decide(
-    code: string,
-    direction: GateDirection,
-    online: boolean,
-  ): Promise<GateDecision> {
-    const held = await deps.readCopy().catch(() => ({ bands: [], deny: [] }));
-    const passages = await readPassages();
-    const inside = (id: string): boolean => passages.bands[id.toLowerCase()]?.inside === true;
-    const first = decideGate({
-      code,
-      direction,
-      key: deps.bandKey(),
-      lookup: bandCopyFrom(held.bands, held.deny).lookup,
-      inside,
-      unknownMeans: 'offline',
-    });
-    // OD-A5: online, an unknown band is asked of the platform before anyone
-    // is sent to reception — by pulling the band copy, bounded so the reader
-    // is answered in time.
-    if (first.open || first.reason !== 'BAND_UNKNOWN_OFFLINE' || !online || !deps.refreshBands)
-      return first;
+  /** A decision and the band copy it was taken on, for what the screen says. */
+  interface Decided {
+    decision: GateDecision;
+    lookup: (bandId: string) => BandLookup;
+  }
+
+  /** Pull the band copy, bounded so the reader is answered in time. True when it landed. */
+  async function refreshWithinBudget(): Promise<boolean> {
+    if (!deps.refreshBands) return false;
     let budget: ReturnType<typeof setTimeout> | undefined;
     const refreshed = await Promise.race([
       deps.refreshBands().catch(() => false),
@@ -424,15 +491,165 @@ export function createGateHost(deps: GateHostDeps): GateHost {
       }),
     ]);
     clearTimeout(budget);
-    if (!refreshed) return first;
-    const again = await deps.readCopy().catch(() => held);
-    return decideGate({
+    if (refreshed) bandsRefreshedAt = realNow();
+    return refreshed;
+  }
+
+  async function decide(code: string, direction: GateDirection, online: boolean): Promise<Decided> {
+    const held = await deps.readCopy().catch(() => ({ bands: [], deny: [] }));
+    const passages = await readPassages();
+    const inside = (id: string): boolean => passages.bands[id.toLowerCase()]?.inside === true;
+    const firstCopy = bandCopyFrom(held.bands, held.deny);
+    const first = decideGate({
       code,
       direction,
       key: deps.bandKey(),
-      lookup: bandCopyFrom(again.bands, again.deny).lookup,
+      lookup: firstCopy.lookup,
       inside,
-      unknownMeans: 'not_found',
+      unknownMeans: 'offline',
+      now: deps.now(),
+    });
+    // OD-A5: online, an unknown band is asked of the platform before anyone
+    // is sent to reception. SCRUM-68: so is a band refused on time — the till
+    // may have added time since the copy was pulled — before anyone is sent
+    // to the cashier.
+    const askAgain =
+      !first.open && (first.reason === 'BAND_UNKNOWN_OFFLINE' || first.reason === 'OVER_TIME');
+    if (!askAgain || !online || !deps.refreshBands) return { decision: first, lookup: firstCopy.lookup };
+    if (!(await refreshWithinBudget())) return { decision: first, lookup: firstCopy.lookup };
+    const again = await deps.readCopy().catch(() => held);
+    const copy = bandCopyFrom(again.bands, again.deny);
+    return {
+      decision: decideGate({
+        code,
+        direction,
+        key: deps.bandKey(),
+        lookup: copy.lookup,
+        inside,
+        unknownMeans: 'not_found',
+        now: deps.now(),
+      }),
+      lookup: copy.lookup,
+    };
+  }
+
+  /** The credit the cached `wallets` scope holds for this scanned code, or undefined. */
+  async function creditOf(code: string): Promise<number | undefined> {
+    if (!deps.readWallets) return undefined;
+    try {
+      const snapshot = readWalletSnapshot(await deps.readWallets());
+      if (!snapshot) return undefined;
+      const match = findSnapshotWallet(snapshot, code);
+      if (!match || !('found' in match) || match.found.status !== 'active') return undefined;
+      return match.found.balanceSatang;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /** What the reader shows for one answer: the logged message, and the facts behind it. */
+  interface Presented {
+    message: string;
+    facts?: GateScreenFacts;
+    /** SCRUM-1077 — the language the band's guest chose at the till, when the copy carries one. */
+    language?: GuestLanguage;
+  }
+
+  /**
+   * SCRUM-68 — what the reader shows for this answer: the plain message when
+   * the box knows nothing more, otherwise the message with the band's ticket,
+   * its time and (on a grant) its credit (`screen.ts`). The facts are kept
+   * beside it for the park's own wording (SCRUM-1078, `withScreen`).
+   */
+  async function present(code: string, decided: Decided, lead: string): Promise<Presented> {
+    const d = decided.decision;
+    if (!d.bandId) return { message: lead };
+    const known = decided.lookup(d.bandId);
+    if (known.state === 'unknown') return { message: lead };
+    const details = known.state === 'active' ? known.details : undefined;
+    const language = details?.guestLanguage ? { language: details.guestLanguage } : {};
+    const facts: GateScreenFacts = {
+      now: deps.now(),
+      ...(known.kind ? { kind: known.kind } : {}),
+      ...(details?.ticketLabel ? { ticketLabel: details.ticketLabel } : {}),
+      ...(details?.validUntil !== undefined ? { validUntil: details.validUntil } : {}),
+      ...(deps.timezone ? { timezone: deps.timezone } : {}),
+    };
+    if (d.open) {
+      const credit = await creditOf(code);
+      const full = { ...facts, ...(credit === undefined ? {} : { creditSatang: credit }) };
+      return { message: gateScreenMessage(lead, full, ['kind', 'ticket', 'time', 'credit']), facts: full, ...language };
+    }
+    if (d.reason === 'KID_BAND' || d.reason === 'OVER_TIME')
+      return { message: gateScreenMessage(lead, facts, ['ticket', 'time']), facts, ...language };
+    return { message: lead, facts, ...language };
+  }
+
+  /** The wording last read, kept by the value it was read from. */
+  let wording: { from: unknown; texts: GateMessageTexts | null } = { from: undefined, texts: null };
+
+  function parkWording(): GateMessageTexts | null {
+    let raw: unknown;
+    try {
+      raw = deps.messages?.();
+    } catch {
+      return null;
+    }
+    if (raw !== wording.from) {
+      let texts: GateMessageTexts | null = null;
+      try {
+        texts = readGateMessagesWire(raw);
+      } catch {
+        texts = null;
+      }
+      wording = { from: raw, texts };
+    }
+    return wording.texts;
+  }
+
+  /**
+   * SCRUM-1078 — the answer with the park's own wording laid out for the
+   * reader (`composeGateScreen` in `@oto/shared`), when the box holds any.
+   * The code and the logged message are never changed: wording decides
+   * nothing. Without any, the answer is exactly as before and the wire lays
+   * the message out itself (`readerScreen`).
+   *
+   * SCRUM-1077 — a band whose guest chose a language at the till is shown in
+   * that language, with one English line under a refusal
+   * (`composeGuestGateScreen`), from the park's wording or the built-in one.
+   * With no text in that language for this case, and for every answer that
+   * names no band of ours, the screen is the park's own list, as above.
+   */
+  function withScreen(
+    answer: ReaderAnswer,
+    key: GateMessageCase,
+    facts?: GateScreenFacts,
+    language?: GuestLanguage,
+  ): ReaderAnswer {
+    const texts = parkWording();
+    if (language) {
+      try {
+        const screen = composeGuestGateScreen(texts, key, language, facts);
+        if (screen !== null) return { ...answer, screen };
+      } catch (err) {
+        note('warn', 'the guest language could not be laid out; the park languages were shown', { err: String(err) });
+      }
+    }
+    if (!texts) return answer;
+    try {
+      return { ...answer, screen: composeGateScreen(texts, key, facts) };
+    } catch (err) {
+      note('warn', 'the park wording could not be laid out; the built-in wording was shown', { err: String(err) });
+      return answer;
+    }
+  }
+
+  function refusalNote(lane: Lane, direction: GateDirection, reason: GateRefusal): void {
+    if (reason !== 'OVER_TIME') return;
+    note('info', `gate ${lane.config.stationName}: ${direction} refused, play time ended (sent to the cashier)`, {
+      station: lane.config.stationId,
+      direction,
+      journalledAs: journalReason(reason),
     });
   }
 
@@ -470,26 +687,34 @@ export function createGateHost(deps: GateHostDeps): GateHost {
         serial: s.serial,
         direction: s.direction,
       });
-      return { code: '0', message: GATE_MESSAGES.GATE_NOT_READY };
+      return withScreen({ code: '0', message: GATE_MESSAGES.GATE_NOT_READY }, 'GATE_NOT_READY');
     }
     const online = deps.isOnline();
-    const decision = await decide(s.code, s.direction, online);
+    const decided = await decide(s.code, s.direction, online);
+    const decision = decided.decision;
     if (!decision.open) {
+      if (lane.config.readerOnly) readerOnlyNote(lane, s.direction, 'refused', decision.reason);
+      refusalNote(lane, s.direction, decision.reason);
       await journalDenied(lane, decision, s.direction, !online);
-      return { code: '0', message: decision.message };
+      const refused = await present(s.code, decided, decision.message);
+      return withScreen({ code: '0', message: refused.message }, decision.reason, refused.facts, refused.language);
     }
+    const granted = await present(s.code, decided, decision.message);
+    const greeting: GateMessageCase = s.direction === 'exit' ? 'goodbye' : 'welcome';
     const side = sideFor(s.direction, lane.config.entrySide);
     const ready = lane.opener.ready();
     if (!ready.ok) {
       lane.openerError = ready.reason;
       await journalDenied(lane, denial('GATE_NOT_READY', decision.bandId), s.direction, !online);
-      return { code: '0', message: GATE_MESSAGES.GATE_NOT_READY };
+      return withScreen({ code: '0', message: GATE_MESSAGES.GATE_NOT_READY }, 'GATE_NOT_READY');
     }
     // Anti-passback is committed ONLY from the board's §2 passage report. An
     // entry opened on a lane that cannot report one would expire as a timeout
     // and let the same band in again a window later, so an entry waits for a
     // lane that can credit it. Exits stay open whatever the board says (OD-A4).
-    if (s.direction === 'entry') {
+    // A reader-only lane (SCRUM-68) has no board to wait for: it credits at
+    // the scan instead (`creditAtScan`), so this check is for lanes with one.
+    if (s.direction === 'entry' && !lane.config.readerOnly) {
       const why = creditBlocker(lane);
       if (why) {
         count(`entry_uncreditable.${why}`);
@@ -498,15 +723,17 @@ export function createGateHost(deps: GateHostDeps): GateHost {
           why,
         });
         await journalDenied(lane, denial('GATE_NOT_READY', decision.bandId), s.direction, !online);
-        return { code: '0', message: GATE_MESSAGES.GATE_NOT_READY };
+        return withScreen({ code: '0', message: GATE_MESSAGES.GATE_NOT_READY }, 'GATE_NOT_READY');
       }
     }
     // One band, one open in flight, box-wide: a second lane must not admit a
     // band whose first open has not yet been credited or expired.
     if (await pendingElsewhere(lane, decision.bandId)) {
+      if (lane.config.readerOnly) readerOnlyNote(lane, s.direction, 'refused', 'GATE_BUSY');
       await journalDenied(lane, denial('GATE_BUSY', decision.bandId), s.direction, !online);
-      return { code: '0', message: GATE_MESSAGES.GATE_BUSY };
+      return withScreen({ code: '0', message: GATE_MESSAGES.GATE_BUSY }, 'GATE_BUSY');
     }
+    if (lane.config.readerOnly) return creditAtScan(lane, decision, s.direction, online, granted, greeting);
     const claim = lane.controller.claim({
       side,
       direction: s.direction,
@@ -518,7 +745,7 @@ export function createGateHost(deps: GateHostDeps): GateHost {
     if (claim.expired.length) await settle(lane, claim.expired);
     if (!claim.ok) {
       await journalDenied(lane, denial(claim.reason, decision.bandId), s.direction, !online);
-      return { code: '0', message: GATE_MESSAGES[claim.reason] };
+      return withScreen({ code: '0', message: GATE_MESSAGES[claim.reason] }, claim.reason);
     }
     try {
       await lane.opener.open(side);
@@ -531,9 +758,84 @@ export function createGateHost(deps: GateHostDeps): GateHost {
         err: lane.openerError,
       });
       await journalDenied(lane, denial('GATE_NOT_READY', decision.bandId), s.direction, !online);
-      return { code: '0', message: GATE_MESSAGES.GATE_NOT_READY };
+      return withScreen({ code: '0', message: GATE_MESSAGES.GATE_NOT_READY }, 'GATE_NOT_READY');
     }
-    return { code: '1', message: decision.message };
+    return withScreen({ code: '1', message: granted.message }, greeting, granted.facts, granted.language);
+  }
+
+  /** One box-log line per decision on a reader-only lane, so the log explains the count. */
+  function readerOnlyNote(
+    lane: Lane,
+    direction: GateDirection,
+    outcome: 'credited' | 'refused',
+    detail: GateRefusal | { inside: number; exitWithoutEntry: boolean },
+  ): void {
+    note(
+      'info',
+      outcome === 'credited'
+        ? `reader-only gate ${lane.config.stationName}: ${direction} granted and credited at the scan (no controller board reports passages)`
+        : `reader-only gate ${lane.config.stationName}: ${direction} refused`,
+      {
+        station: lane.config.stationId,
+        direction,
+        ...(typeof detail === 'string' ? { reason: detail } : detail),
+      },
+    );
+  }
+
+  /**
+   * SCRUM-68 — the reader-only lane's grant. The reader opens the barrier on
+   * our "1" and no board will ever report the passage, so it is CREDITED AT
+   * THE SCAN: the box's inside-state moves now (anti-passback works from the
+   * scan) and the entry or exit is journalled now, in the same fact a board's
+   * report produces, marked `inferred` — the box inferred the passage, no
+   * board reported it. No open is claimed, so none can time out later.
+   *
+   * Anti-passback is checked again inside the one-at-a-time state write: two
+   * scans of one band in flight cannot both be credited as entries.
+   */
+  async function creditAtScan(
+    lane: Lane,
+    decision: Extract<GateDecision, { open: true }>,
+    direction: GateDirection,
+    online: boolean,
+    granted: Presented,
+    greeting: GateMessageCase,
+  ): Promise<ReaderAnswer> {
+    const commit = await withPassages((state) => {
+      const key = decision.bandId.toLowerCase();
+      const wasInside = state.bands[key]?.inside === true;
+      if (direction === 'entry' && wasInside) return null;
+      const result = commitPassage(wasInside, direction, state.count);
+      state.bands[key] = { inside: result.inside, at: deps.now() };
+      state.count = result.count;
+      return result;
+    });
+    if (!commit) {
+      readerOnlyNote(lane, direction, 'refused', 'ANTI_PASSBACK');
+      await journalDenied(lane, denial('ANTI_PASSBACK', decision.bandId), direction, !online);
+      return withScreen({ code: '0', message: GATE_MESSAGES.ANTI_PASSBACK }, 'ANTI_PASSBACK', undefined, granted.language);
+    }
+    readerOnlyNote(lane, direction, 'credited', {
+      inside: commit.count,
+      exitWithoutEntry: commit.exitWithoutEntry,
+    });
+    await journal(
+      gateEventFact({
+        eventId: deps.mintId(),
+        bandId: decision.bandId,
+        kind: direction,
+        direction,
+        side: sideFor(direction, lane.config.entrySide),
+        stationId: lane.config.stationId,
+        occurredAt: stamp(),
+        exitWithoutEntry: commit.exitWithoutEntry,
+        revoked: decision.revoked,
+        inferred: true,
+        offline: !online,
+      }),
+    );
+    return withScreen({ code: '1', message: granted.message }, greeting, granted.facts, granted.language);
   }
 
   async function settle(lane: Lane, outcomes: ControllerOutcome[]): Promise<void> {
@@ -711,9 +1013,30 @@ export function createGateHost(deps: GateHostDeps): GateHost {
     return 'unread';
   }
 
+  /**
+   * SCRUM-68 — the band copy is pulled every `GATE_BANDS_REFRESH_MS` while
+   * online, in the background, so the screen's ticket and time (an Add time
+   * included) stay current. Never awaited by the tick: a slow platform must
+   * not hold the board's polling.
+   */
+  function refreshBandsWhenDue(): void {
+    if (!deps.refreshBands || bandsRefreshing || !deps.isOnline()) return;
+    if (realNow() - bandsRefreshedAt < (deps.bandsRefreshMs ?? GATE_BANDS_REFRESH_MS)) return;
+    bandsRefreshing = true;
+    // Stamped at the attempt, so a failing platform is asked once a period, not every tick.
+    bandsRefreshedAt = realNow();
+    void deps
+      .refreshBands()
+      .catch((err) => note('warn', 'the gate band copy could not be refreshed', { err: String(err) }))
+      .finally(() => {
+        bandsRefreshing = false;
+      });
+  }
+
   async function tick(): Promise<void> {
     if (polling) return;
     polling = true;
+    refreshBandsWhenDue();
     try {
       for (const lane of lanes.values()) {
         await settle(lane, lane.controller.expire());
@@ -755,7 +1078,22 @@ export function createGateHost(deps: GateHostDeps): GateHost {
     tick,
 
     async start() {
-      for (const lane of lanes.values()) await openLink(lane);
+      for (const lane of lanes.values()) {
+        if (lane.config.readerOnly) {
+          note(
+            'info',
+            `gate ${lane.config.stationName}: reader-only lane (no controller board): the reader opens the barrier on the box's "1", and each entry and exit is credited at the scan`,
+            {
+              station: lane.config.stationId,
+              readers: lane.config.readers.map((r) => ({
+                serial: r.serial,
+                direction: r.direction ?? 'both',
+              })),
+            },
+          );
+        }
+        await openLink(lane);
+      }
       if (deps.listen) {
         try {
           server = await startReaderServer(reader, deps.listen);

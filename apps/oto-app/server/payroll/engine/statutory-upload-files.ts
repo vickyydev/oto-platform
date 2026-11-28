@@ -30,6 +30,9 @@ export function statutoryUploadFiles(data: PayrollWorld, calculation: CompanyCal
     // The combined person appears once at the registered branch, with their full uncapped wage.
     const wage = money(calculation.entities.flatMap(e => e.people).filter(p => p.id === person.id)
       .flatMap(p => p.lines).filter(l => l.category === "earning" && l.ssoWage).reduce((n, l) => n + l.amount, 0));
+    // SCRUM-1073 (owner ruling, 26 November 2026): a day-rate person with no worked day has no wage and no
+    // contribution, so there is nothing to file for them; they are left out and never stop the lock.
+    if (wage <= 0 && contribution <= 0 && person.workerType === "day-rate") continue;
     const problems = [!thaiIdValid(person.taxId) ? "invalid 13-digit ID checksum" : "", !SSO_TITLES.includes(title) ? "missing or invalid title" : "", !first ? "missing given name" : "", wage <= 0 ? "wage is 0" : ""].filter(Boolean);
     if (problems.length) { issues.push(`${person.name}: ${problems.join("; ")} — excluded until fixed.`); continue; }
     const row = [Number(person.taxId), title, first, surname, wage];

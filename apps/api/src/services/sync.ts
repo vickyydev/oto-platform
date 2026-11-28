@@ -96,6 +96,7 @@ import { AppError } from '../lib/errors';
 import { pgErrorOf } from '../lib/scrub';
 import type { BranchReach } from './access-control';
 import { audit } from './audit';
+import { withBandGateDetails } from './band-gate-details';
 import { childChangeWritten } from './child-change';
 import {
   childAuditView,
@@ -5469,7 +5470,8 @@ export async function cacheBundle(
         )
         .orderBy(asc(band.id))
         .limit(limit);
-      put('bands', rows, {
+      // SCRUM-68 — each with its ticket, stay and play end for the gate.
+      put('bands', await withBandGateDetails(db, rows), {
         rowsRead: rows.length,
         cursorOf: (last) => (last as { id: string }).id,
       });

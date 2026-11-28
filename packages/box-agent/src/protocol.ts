@@ -622,6 +622,15 @@ export interface BoxConfigBundle {
    * `BoxAgentOptions.bands.key`, which wins over this.
    */
   bandKey?: string | null;
+  /**
+   * SCRUM-1078 — the park's own wording for the gate readers, sent to a box
+   * that runs a gate once the park has changed anything in the Console's Gate
+   * messages page. Typed `unknown` on the wire and read where it is used
+   * (`readGateMessagesWire` in `@oto/shared`), like a device's settings: a
+   * field added here must never stop an older agent parsing its bundle.
+   * Absent, the gate shows its built-in wording.
+   */
+  gateMessages?: unknown;
   heartbeatIntervalS: number;
   minSupportedAgentVersion: string;
 }

@@ -28,6 +28,13 @@ interface ContactDisplayAnswer {
   phone?: string;
   nickname?: string;
   contactChannel?: ContactChannel;
+  /**
+   * SCRUM-1077 — on the first screen's answer, the station's language as the
+   * same document holds it: a display shows that screen only after the guest
+   * chose their language in this sale, and tells the station that language
+   * (`lib/guestLanguage.ts`). Read here, never sent by the display.
+   */
+  language?: string;
 }
 export type DisplayAnswer = ContactDisplayAnswer | ChildReviewAnswer | ConsentAnswer;
 export interface TicketDisplayState {
@@ -418,8 +425,9 @@ export function readDisplayAnswer(document: StationSessionDocument, requestId: s
   }
   const answer = document.prompt.answer as Partial<ContactDisplayAnswer> | undefined;
   if (!answer || typeof answer.actionId !== 'string') return null;
-  if (answer.type === 'skip_identify' && document.stage === 'identify') return answer as DisplayAnswer;
-  if (answer.type === 'identify' && document.stage === 'identify' && typeof answer.phone === 'string') return answer as DisplayAnswer;
+  // SCRUM-1077 — the first screen's answer carries the language the guest chose for it.
+  if (answer.type === 'skip_identify' && document.stage === 'identify') return { ...answer, language: document.language } as DisplayAnswer;
+  if (answer.type === 'identify' && document.stage === 'identify' && typeof answer.phone === 'string') return { ...answer, language: document.language } as DisplayAnswer;
   if (answer.type === 'contact_done' && document.stage === 'input' && typeof answer.phone === 'string'
     && typeof answer.nickname === 'string' && ['whatsapp','telegram','line'].includes(answer.contactChannel ?? '')) return answer as DisplayAnswer;
   return null;

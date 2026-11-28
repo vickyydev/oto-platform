@@ -23,6 +23,7 @@
  */
 
 import { z } from 'zod';
+import type { GuestLanguage } from './guest-language';
 
 export const GATE_EVENT_TYPE = 'band.gate_event';
 
@@ -85,3 +86,28 @@ export const GateEventPayloadSchema = z.object({
   occurredAt: z.string().datetime(),
 });
 export type GateEventPayload = z.infer<typeof GateEventPayloadSchema>;
+
+/**
+ * SCRUM-68 — what the platform adds to each row of the `bands` scope for the
+ * gate's screen and its play-time rule. Optional on the wire: a box reads a
+ * copy from an older platform without them, and then shows less and refuses
+ * nothing on time.
+ */
+export interface BandGateDetails {
+  /** The ticket line's label ("2 Hours Play"); null for a band with no line. */
+  ticketLabel?: string | null;
+  /** The stay as the band prints it ("2 Hours"); null when the line sells none. */
+  stayLabel?: string | null;
+  /**
+   * When the band's play ends, ISO: the band print's own rule
+   * (`bandValidUntil`), added time included. Null when the line sells no
+   * stay hours.
+   */
+  validUntil?: string | null;
+  /**
+   * SCRUM-1077 — the language the guest chose at the till for the band's
+   * sale (`pos.sale.guest_language`); null when nobody chose. Wording only:
+   * the gate's decision never reads it.
+   */
+  guestLanguage?: GuestLanguage | null;
+}

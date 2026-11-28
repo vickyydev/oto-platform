@@ -58,6 +58,10 @@ export default function PayrollRewardsPage() {
       <h1 className="text-2xl font-semibold">Service charge &amp; incentives</h1>
       <p className="mt-1 max-w-3xl text-sm text-muted-foreground">Each change starts from a date you choose and keeps the older terms for the months before it. <Link href="/payroll/month-end" className="underline">Go to month-end</Link>.</p>
     </div>
+    <Link href="/payroll/setup/rewards/clauses" className="flex flex-wrap items-center gap-2 rounded-lg border border-orange-500/40 bg-orange-500/10 px-3 py-2 text-sm hover:bg-orange-500/15" data-testid="link-incentive-clauses">
+      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white">!</span>
+      <span className="flex-1"><strong>Incentive clauses from contracts</strong>: the AI reads each employee's clause, a payroll manager or admin approves the reading, and it becomes an incentive rule below.</span>
+      <span className="font-semibold underline">Open</span></Link>
     {rewards.isLoading && <Skeleton className="h-64 w-full" />}
     {rewards.error && <Empty>{errorText(rewards.error)}</Empty>}
     {rewards.data && <><ServicePolicies view={rewards.data} /><Incentives view={rewards.data} /></>}

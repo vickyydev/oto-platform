@@ -7,6 +7,7 @@ import {
   CartBandHolderSchema,
   CartBenefitSchema,
   CartPrepaidSchema,
+  GuestLanguageSchema,
   HeldSalesAnswerSchema,
   REFUND_MODES,
   SALE_REPRINT_KINDS,
@@ -322,6 +323,14 @@ const Cart = z.object({
   promoCodes: z.array(z.string().min(1).max(40)).max(10).default([]),
   customerPhone: z.string().max(40).nullish(),
   customerNickname: z.string().max(120).nullish(),
+  /**
+   * SCRUM-1077 — the language the guest chose at the till in this sale, one of
+   * the customer display's five. Kept on the sale and sent to the gate box
+   * with each of its bands. Omitted or null when nobody chose; anything else
+   * is kept as none rather than refused, because a sale is never refused over
+   * wording.
+   */
+  guestLanguage: GuestLanguageSchema.nullish().catch(null),
   expectedTotalSatang: z.number().int().min(0).optional(),
   /**
    * SCRUM-494 — the child's stay behind the band the F&B order was taken

@@ -44,7 +44,7 @@ import { validateCompanyDocument } from "./engine/company-validation";
 import { systemClock } from "./engine/clock";
 import type { CompanyIncentive, CompanyIncentiveKind, CompanyPayrollDocument, IncentiveAssignment, IncentiveRuleVersion, ServicePolicy } from "./engine/company-model";
 
-type Tx = Parameters<Parameters<typeof db["transaction"]>[0]>[0];
+export type Tx = Parameters<Parameters<typeof db["transaction"]>[0]>[0];
 const iso = (v: Date | string | null | undefined) => v == null ? "" : v instanceof Date ? v.toISOString().slice(0, 10) : String(v).slice(0, 10);
 const finite = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
 const KINDS: CompanyIncentiveKind[] = ["revenue", "team-days", "unit-pool", "unit", "kpi", "guarantee", "manual"];
@@ -52,7 +52,7 @@ const BASES: ServicePolicy["basis"][] = ["calendar", "worked", "equal", "role-we
 const strings = (v: unknown) => Array.isArray(v) && v.every((x) => typeof x === "string");
 
 /** The reward rows as the engine's document: policies, rules, versions, assignments, and each month's run status. */
-async function rewardDocument(tx: Tx | typeof db, tenantId: string): Promise<CompanyPayrollDocument> {
+export async function rewardDocument(tx: Tx | typeof db, tenantId: string): Promise<CompanyPayrollDocument> {
   const [policies, rules, versions, assignments, runs] = await Promise.all([
     tx.select().from(payrollServicePolicies).where(eq(payrollServicePolicies.tenantId, tenantId)).orderBy(asc(payrollServicePolicies.version)),
     tx.select().from(payrollIncentiveRules).where(eq(payrollIncentiveRules.tenantId, tenantId)),
@@ -89,7 +89,7 @@ async function rewardDocument(tx: Tx | typeof db, tenantId: string): Promise<Com
  * offered. Independent of any month's pay rules, so a rule can be dated
  * before or after the months a branch has payroll details for.
  */
-async function rewardWorld(tenantId: string, date: string): Promise<PayrollWorld> {
+export async function rewardWorld(tenantId: string, date: string): Promise<PayrollWorld> {
   const rows = await db.select({ profile: payrollProfiles, employee: employees }).from(payrollProfiles)
     .innerJoin(employees, and(eq(employees.id, payrollProfiles.employeeId), eq(employees.tenantId, tenantId)))
     .where(eq(payrollProfiles.tenantId, tenantId)).orderBy(asc(payrollProfiles.employeeId));
@@ -139,7 +139,7 @@ async function tenantEmployeeIds(tx: Tx, tenantId: string, ids: string[]) {
   const rows = await tx.select({ id: employees.id }).from(employees).where(and(eq(employees.tenantId, tenantId), inArray(employees.id, ids)));
   return new Set(rows.map((r) => r.id));
 }
-const serialize = (tx: Tx, tenantId: string) => tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`${tenantId}:payroll-rewards`}))`);
+export const serialize = (tx: Tx, tenantId: string) => tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`${tenantId}:payroll-rewards`}))`);
 
 /** A policy as configured: groups and exceptions only when set. */
 function readPolicy(raw: unknown, streams: Set<string>): ServicePolicy {
@@ -241,6 +241,22 @@ function readTerms(raw: unknown, id: string, streams: Set<string>, branchIds: Se
  * starts on the next open month, as the prototype rules.
  */
 export async function saveIncentive(tenantId: string, actor: PayrollActor, body: Record<string, unknown>) {
+  requireReason(body.reason);
+  const from = typeof body.from === "string" ? body.from : "";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from)) throw new PayrollRefusal(400, "Choose a valid start date.");
+  const world = await rewardWorld(tenantId, from);
+  return db.transaction(async (tx) => {
+    await serialize(tx, tenantId);
+    return saveIncentiveIn(tx, tenantId, actor, body, world);
+  });
+}
+
+/**
+ * `saveIncentive`'s work inside a transaction the caller holds with the
+ * rewards lock (`serialize`), so a clause approval (SCRUM-1075) writes its
+ * rules and its reading in one transaction through the same checks.
+ */
+export async function saveIncentiveIn(tx: Tx, tenantId: string, actor: PayrollActor, body: Record<string, unknown>, world: PayrollWorld) {
   const reason = requireReason(body.reason);
   const from = typeof body.from === "string" ? body.from : "";
   if (!/^\d{4}-\d{2}-\d{2}$/.test(from)) throw new PayrollRefusal(400, "Choose a valid start date.");
@@ -255,9 +271,7 @@ export async function saveIncentive(tenantId: string, actor: PayrollActor, body:
     jobTitle: typeof t?.jobTitle === "string" ? t.jobTitle.trim() : "", branches: strings(t?.branches) ? t.branches as string[] : [],
   }));
   if (titles.some((t) => !t.jobTitle)) throw new PayrollRefusal(400, "Name each job title.");
-  const world = await rewardWorld(tenantId, from);
-  return db.transaction(async (tx) => {
-    await serialize(tx, tenantId);
+  {
     if (existingId) {
       const [rule] = await tx.select({ id: payrollIncentiveRules.id }).from(payrollIncentiveRules)
         .where(and(eq(payrollIncentiveRules.tenantId, tenantId), sql`${payrollIncentiveRules.id}::text = ${existingId}`)).limit(1);
@@ -313,5 +327,5 @@ export async function saveIncentive(tenantId: string, actor: PayrollActor, body:
       oldValue: before.incentives.find((r) => r.id === ruleId) ?? null, newValue: { terms: storedTerms, from, selected, titles } });
     const version = (doc.incentiveVersions ?? []).filter((v) => v.ruleId === ruleId).at(-1)!;
     return { id: ruleId, version: version.version, effectiveFrom: version.effectiveFrom, terms: storedTerms };
-  });
+  }
 }

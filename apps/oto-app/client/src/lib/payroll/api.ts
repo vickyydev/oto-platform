@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import type { PayrollProfileView, PayrollRosterView, PayrollSetupChange, PayrollSetupView } from "@shared/payroll-config";
 import type { FeedsView, MonthEndView, MonthInputsView, MyPayslipsView, PayrollDownloadsView, PayrollHistoryRow, PayrollHistoryVersionView, PreviewView, RewardsView } from "@shared/payroll-month";
+import type { ClauseExampleView, ClauseReadingsView } from "@shared/payroll-clause-reading";
 
 /** A refused payroll call: the server's words plus the prototype's list of problems, when it gave one. */
 export class PayrollApiError extends Error {
@@ -53,6 +54,16 @@ export const useMonthInputs = (month: string) => useQuery<MonthInputsView>({
 });
 export const useRewards = () => useQuery<RewardsView>({
   queryKey: ["/api/payroll/setup/rewards"], queryFn: () => payrollCall("GET", "/api/payroll/setup/rewards"), staleTime: 0,
+});
+/** SCRUM-1075: the incentive clauses, their readings, and one reading's worked example by the payroll engine. */
+export const CLAUSES_PATH = "/payroll/setup/rewards/clauses";
+export const useClauseReadings = () => useQuery<ClauseReadingsView>({
+  queryKey: ["/api/payroll/setup/rewards/clauses"], queryFn: () => payrollCall("GET", "/api/payroll/setup/rewards/clauses"), staleTime: 0,
+});
+export const useClauseExample = (readingId: string | null, month: string) => useQuery<ClauseExampleView>({
+  queryKey: ["/api/payroll/setup/rewards/clause-readings", readingId, "example", month],
+  queryFn: () => payrollCall("GET", `/api/payroll/setup/rewards/clause-readings/${readingId}/example?month=${month}`),
+  staleTime: 0, enabled: !!readingId && /^\d{4}-\d{2}$/.test(month), retry: false,
 });
 export const useFeeds = (month: string) => useQuery<FeedsView>({
   queryKey: ["/api/payroll/feeds", month], queryFn: () => payrollCall("GET", `/api/payroll/feeds/${month}`), staleTime: 0, enabled: !!month,

@@ -71,3 +71,6 @@ export * from './party-slips';
 // sale and refund a refund's slip names, and beside the party slips.
 export * from './prep-slips';
 export * from './prebooking';
+// The gate readers' wording per park and language (SCRUM-1078): keyed on the
+// tenancy and nothing else of ours.
+export * from './gate-messages';

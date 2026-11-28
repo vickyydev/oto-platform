@@ -21,6 +21,7 @@ import { BoothReport } from '@/pages/BoothReport';
 import { Branches } from '@/pages/Branches';
 import { Devices } from '@/pages/Devices';
 import { Failures } from '@/pages/Failures';
+import { GateMessages } from '@/pages/GateMessages';
 import { Health } from '@/pages/Health';
 import { Integrations } from '@/pages/Integrations';
 import { Vouchers } from '@/pages/Vouchers';
@@ -197,7 +198,7 @@ const pageElements: Record<string, ReactElement> = {
   'access-review': <AccessReview />,
   health: <Health />, failures: <Failures />, activity: <Activity />,
   devices: <Devices />, branches: <Branches />, bookings: <Bookings />,
-  booths: <Booths />, 'booth-report': <BoothReport />, vouchers: <Vouchers />,
+  booths: <Booths />, 'gate-messages': <GateMessages />, 'booth-report': <BoothReport />, vouchers: <Vouchers />,
   'voucher-types': <VoucherTypes />, integrations: <Integrations />,
   support: <Support />,
 };

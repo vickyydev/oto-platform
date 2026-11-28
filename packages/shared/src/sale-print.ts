@@ -603,6 +603,23 @@ function extraPlayLabel(minutes: number): string {
   return `${minutes} min`;
 }
 
+/**
+ * When a band's play ends — the band print's "valid until": the sale's close
+ * (else when it was rung up), plus the line's stay hours, plus the extra play
+ * paid for that band since (SCRUM-861). Null when the line sells no stay
+ * hours: such a band has no end time. The gate reads the same instant from
+ * its bands copy (SCRUM-68), so the paper and the gate cannot disagree.
+ */
+export function bandValidUntil(
+  start: Date,
+  stayHours: number | null | undefined,
+  extraMinutes: number | null | undefined,
+): Date | null {
+  if (!stayHours || stayHours <= 0) return null;
+  const extra = extraMinutes && extraMinutes > 0 ? extraMinutes : 0;
+  return new Date(start.getTime() + stayHours * 3_600_000 + extra * 60_000);
+}
+
 /** One band's paper: who wears it, for how long, what the gate reads. */
 export function saleBandDocument(snapshot: SalePrintSnapshot, band: SalePrintBand): SaleBandDocument {
   const line = band.saleLineId ? snapshot.lines.find((l) => l.id === band.saleLineId) : undefined;
@@ -611,14 +628,12 @@ export function saleBandDocument(snapshot: SalePrintSnapshot, band: SalePrintBan
   // says so ("2 hours + 1 hour"), so a band printed after an Add time is not
   // mistaken for the one it replaces.
   const extraMinutes = band.extraMinutes && band.extraMinutes > 0 ? band.extraMinutes : 0;
+  const until = bandValidUntil(start, line?.stayHours, extraMinutes);
   const duration =
-    line?.stayHours && line.stayHours > 0
+    line?.stayHours && line.stayHours > 0 && until
       ? `${line.stayDurationLabel ?? `${line.stayHours} hours`}${
           extraMinutes > 0 ? ` + ${extraPlayLabel(extraMinutes)}` : ''
-        } · valid until ${hhmm(
-          new Date(start.getTime() + line.stayHours * 3_600_000 + extraMinutes * 60_000),
-          snapshot.timezone,
-        )}`
+        } · valid until ${hhmm(until, snapshot.timezone)}`
       : (line?.stayDurationLabel ?? undefined);
   const allergy =
     band.kind === 'kid'

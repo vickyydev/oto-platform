@@ -36,6 +36,8 @@ export * from './booth';
 export * from './booth-code';
 export * from './band-code';
 export * from './gate';
+export * from './gate-messages';
+export * from './guest-language';
 export * from './occupancy';
 export * from './booking-qr';
 export * from './refund';
