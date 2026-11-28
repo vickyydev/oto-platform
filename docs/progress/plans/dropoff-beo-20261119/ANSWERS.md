@@ -276,6 +276,8 @@ Old data:
   here and in `docs/progress/plans/go-live/PROGRESS.md`.
 - **R18, face clock-in:** staff enrol their faces again in the new app, later;
   PIN and phone are enough for now. SCRUM-1056, not started.
+
+  **28 November update.** The owner has received the face clock-in proposal. It awaits approval. The existing attendance flow continues. See the [park checkpoint](../../PARK_CHECKPOINT_2026-11-25.md).
 - **R19, the park's own Mystery Box voucher:** wait; he will do it or say when.
 - **R20, the 55 older signed contracts:** he will look in the old Replit
   project and download the folder; the steps are on SCRUM-1057 and he asked to
